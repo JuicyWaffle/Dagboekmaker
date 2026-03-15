@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dagboekmaker — Actoren</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #242836;
+    --border: #2e3345; --text: #e0e0e8; --muted: #8888a0;
+    --accent: #6c8cff; --accent2: #4ecdc4; --danger: #ff6b6b;
+    --warn: #ffd93d; --success: #51cf66;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif;
+         background: var(--bg); color: var(--text); line-height:1.5; }
+  .app { max-width: 900px; margin: 0 auto; padding: 24px 20px; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h1 span { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
+
+  .nav { display: flex; gap: 16px; margin-bottom: 24px; font-size: 13px; }
+  .nav a { color: var(--accent); text-decoration: none; }
+  .nav a:hover { text-decoration: underline; }
+
+  .search { background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 14px;
+    width: 100%; margin-bottom: 16px; }
+  .search:focus { outline: none; border-color: var(--accent); }
+
+  .summary { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .summary-card { background: var(--surface); border-radius: 8px; padding: 12px 18px;
+    flex: 1; min-width: 120px; }
+  .summary-card .num { font-size: 26px; font-weight: 700; color: var(--accent); }
+  .summary-card .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+
+  .actor-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .actor-card { background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; transition: border-color 0.15s; cursor: default; }
+  .actor-card:hover { border-color: var(--accent); }
+  .actor-card.protagonist { border-left: 3px solid var(--accent); }
+
+  .actor-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .actor-rank { font-size: 13px; color: var(--muted); font-weight: 600; min-width: 28px; }
+  .actor-name { font-size: 16px; font-weight: 600; }
+  .actor-badges { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; }
+  .badge-protagonist { background: rgba(108,140,255,0.15); color: var(--accent); }
+  .badge-relatie { background: rgba(78,205,196,0.15); color: var(--accent2); }
+  .badge-type { background: var(--surface2); color: var(--muted); }
+
+  .actor-meta { display: flex; gap: 20px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+  .actor-meta .label { color: var(--muted); }
+  .actor-meta .value { color: var(--text); }
+
+  .freq-bar { height: 4px; background: var(--surface2); border-radius: 2px;
+    margin-top: 8px; overflow: hidden; }
+  .freq-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+
+  .aliassen { font-size: 11px; color: var(--muted); font-style: italic; }
+
+  .empty { text-align: center; padding: 40px; color: var(--muted); }
+
+  .merge-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    background: var(--surface); border: 1px solid var(--accent); border-radius: 10px;
+    margin-bottom: 16px; position: sticky; top: 0; z-index: 10; }
+  .merge-bar .info { font-size: 13px; color: var(--text); flex: 1; }
+  .merge-bar button { padding: 6px 16px; border-radius: 6px; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 600; }
+  .merge-bar .btn-merge { background: var(--accent); color: #fff; }
+  .merge-bar .btn-merge:disabled { opacity: 0.4; cursor: default; }
+  .merge-bar .btn-cancel { background: var(--surface2); color: var(--muted); }
+
+  .actor-card .select-cb { cursor: pointer; accent-color: var(--accent); width: 16px; height: 16px; }
+  .actor-card.selected { border-color: var(--accent); background: rgba(108,140,255,0.05); }
+
+  .merge-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .merge-panel { background: var(--surface); border-radius: 12px; padding: 24px;
+    max-width: 500px; width: 90%; border: 1px solid var(--border); }
+  .merge-panel h3 { margin-bottom: 12px; font-size: 16px; }
+  .merge-panel .option { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);
+    margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s; }
+  .merge-panel .option:hover { border-color: var(--accent); }
+  .merge-panel .option.chosen { border-color: var(--accent); background: rgba(108,140,255,0.1); }
+  .merge-panel .btns { display: flex; gap: 10px; margin-top: 16px; }
+  .merge-panel .btns button { padding: 8px 20px; border-radius: 6px; border: none;
+    cursor: pointer; font-size: 13px; font-weight: 600; }
+
+  .roles-list { display: flex; gap: 4px; flex-wrap: wrap; }
+  .role-chip { display: inline-block; padding: 1px 6px; border-radius: 8px;
+    font-size: 10px; background: var(--surface2); color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback } = React;
+
+function App() {
+  const [actors, setActors] = useState([]);
+  const [zoek, setZoek] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [selectie, setSelectie] = useState(new Set());
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeTarget, setMergeTarget] = useState(null);
+  const [merging, setMerging] = useState(false);
+
+  const laadActors = useCallback(() => {
+    fetch('/api/actors')
+      .then(r => r.json())
+      .then(data => { setActors(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { laadActors(); }, [laadActors]);
+
+  const maxDocs = useMemo(() => Math.max(1, ...actors.map(a => a.documenten || 0)), [actors]);
+
+  const gefilterd = useMemo(() => {
+    if (!zoek.trim()) return actors;
+    const q = zoek.toLowerCase();
+    return actors.filter(a =>
+      (a.naam || '').toLowerCase().includes(q) ||
+      (a.aliassen || []).some(al => al.toLowerCase().includes(q)) ||
+      (a.relatie || '').toLowerCase().includes(q) ||
+      (Array.isArray(a.rol) ? a.rol.join(' ') : (a.rol || '')).toLowerCase().includes(q)
+    );
+  }, [actors, zoek]);
+
+  const totaalDocs = useMemo(() => actors.reduce((s, a) => s + (a.documenten || 0), 0), [actors]);
+
+  const toggleSelect = (id) => {
+    setSelectie(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const geselecteerdeActors = useMemo(
+    () => actors.filter(a => selectie.has(a.id)),
+    [actors, selectie]
+  );
+
+  const openMerge = () => {
+    if (geselecteerdeActors.length < 2) return;
+    setMergeTarget(geselecteerdeActors[0].id);
+    setMergeOpen(true);
+  };
+
+  const doemerge = async () => {
+    if (!mergeTarget) return;
+    setMerging(true);
+    const verwijder_ids = [...selectie].filter(id => id !== mergeTarget);
+    try {
+      const res = await fetch('/api/actors/merge', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ behoud_id: mergeTarget, verwijder_ids })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setSelectie(new Set());
+        setMergeOpen(false);
+        laadActors();
+      } else {
+        alert('Fout: ' + (data.error || 'onbekend'));
+      }
+    } catch (e) {
+      alert('Fout: ' + e.message);
+    }
+    setMerging(false);
+  };
+
+  const renderRol = (rol) => {
+    if (!rol) return null;
+    const rollen = Array.isArray(rol) ? rol : [rol];
+    return (
+      <div className="roles-list">
+        {rollen.map(r => <span key={r} className="role-chip">{r}</span>)}
+      </div>
+    );
+  };
+
+  return (
+    <div className="app">
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+        <h1>Dagboekmaker <span>actoren</span></h1>
+      </div>
+      <div className="nav">
+        <a href="/">&larr; Beheer</a>
+        <a href="/formaten">Formaten</a>
+        <a href="/dashboard">Dashboard</a>
+      </div>
+
+      <div className="summary">
+        <div className="summary-card">
+          <div className="num">{actors.length}</div>
+          <div className="lbl">Personen</div>
+        </div>
+        <div className="summary-card">
+          <div className="num">{totaalDocs.toLocaleString('nl')}</div>
+          <div className="lbl">Vermeldingen</div>
+        </div>
+        <div className="summary-card">
+          <div className="num">{actors.filter(a => (a.documenten || 0) > 10).length}</div>
+          <div className="lbl">Frequent (&gt;10)</div>
+        </div>
+      </div>
+
+      {selectie.size > 0 && (
+        <div className="merge-bar">
+          <div className="info">{selectie.size} actoren geselecteerd</div>
+          <button className="btn-merge" disabled={selectie.size < 2} onClick={openMerge}>
+            Samenvoegen
+          </button>
+          <button className="btn-cancel" onClick={() => setSelectie(new Set())}>Deselecteer</button>
+        </div>
+      )}
+
+      <input className="search" type="text" placeholder="Zoek op naam, alias, relatie, rol..."
+        value={zoek} onChange={e => setZoek(e.target.value)} />
+
+      {loading ? (
+        <div className="empty">Laden...</div>
+      ) : gefilterd.length === 0 ? (
+        <div className="empty">
+          {actors.length === 0 ? 'Nog geen actoren gevonden. Start de pipeline om documenten te verwerken.'
+            : 'Geen resultaten voor deze zoekopdracht.'}
+        </div>
+      ) : (
+        <div className="actor-list">
+          {gefilterd.map((a, i) => {
+            const isProtagonist = a.rol === 'protagonist' || a.relatie === 'zelf';
+            const pct = maxDocs > 0 ? Math.round((a.documenten / maxDocs) * 100) : 0;
+            const rank = actors.indexOf(a) + 1;
+            const selected = selectie.has(a.id);
+
+            return (
+              <div key={a.id} className={`actor-card ${isProtagonist ? 'protagonist' : ''} ${selected ? 'selected' : ''}`}>
+                <div className="actor-header">
+                  <input type="checkbox" className="select-cb" checked={selected}
+                    onChange={() => toggleSelect(a.id)} />
+                  <span className="actor-rank">#{rank}</span>
+                  <span className="actor-name">{a.naam || '?'}</span>
+                  <div className="actor-badges">
+                    {isProtagonist && <span className="badge badge-protagonist">protagonist</span>}
+                    {a.relatie && !isProtagonist && <span className="badge badge-relatie">{a.relatie}</span>}
+                    {a.type && a.type !== 'persoon' && <span className="badge badge-type">{a.type}</span>}
+                  </div>
+                </div>
+
+                {a.aliassen && a.aliassen.length > 0 && (
+                  <div className="aliassen">ook: {a.aliassen.join(', ')}</div>
+                )}
+
+                <div className="actor-meta">
+                  <span><span className="label">Documenten: </span><span className="value">{(a.documenten || 0).toLocaleString('nl')}</span></span>
+                  {a.rol && <span><span className="label">Rol: </span>{renderRol(a.rol)}</span>}
+                  {a.geboorte && <span><span className="label">Geb: </span><span className="value">{a.geboorte}</span></span>}
+                  {a.overlijden && <span><span className="label">Overl: </span><span className="value">{a.overlijden}</span></span>}
+                </div>
+
+                <div className="freq-bar">
+                  <div className="freq-fill" style={{width: `${pct}%`}} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {mergeOpen && (
+        <div className="merge-modal" onClick={() => setMergeOpen(false)}>
+          <div className="merge-panel" onClick={e => e.stopPropagation()}>
+            <h3>Actoren samenvoegen</h3>
+            <p style={{fontSize:'13px',color:'var(--muted)',marginBottom:'12px'}}>
+              Kies welke actor behouden blijft. De anderen worden samengevoegd als aliassen.
+            </p>
+            {geselecteerdeActors.map(a => (
+              <div key={a.id} className={`option ${mergeTarget === a.id ? 'chosen' : ''}`}
+                   onClick={() => setMergeTarget(a.id)}>
+                <strong>{a.naam}</strong>
+                <span style={{fontSize:'12px',color:'var(--muted)',marginLeft:'8px'}}>
+                  ({a.documenten || 0} docs)
+                </span>
+                {a.relatie && <span style={{fontSize:'11px',color:'var(--accent2)',marginLeft:'8px'}}>{a.relatie}</span>}
+              </div>
+            ))}
+            <div className="btns">
+              <button style={{background:'var(--accent)',color:'#fff'}}
+                      onClick={doemerge} disabled={merging}>
+                {merging ? 'Bezig...' : 'Samenvoegen'}
+              </button>
+              <button style={{background:'var(--surface2)',color:'var(--muted)'}}
+                      onClick={() => setMergeOpen(false)}>Annuleer</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

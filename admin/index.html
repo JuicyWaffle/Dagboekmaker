@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dagboekmaker — Beheer</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #242836;
+    --border: #2e3345; --text: #e0e0e8; --muted: #8888a0;
+    --accent: #6c8cff; --accent2: #4ecdc4; --danger: #ff6b6b;
+    --warn: #ffd93d; --success: #51cf66;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif;
+         background: var(--bg); color: var(--text); line-height:1.5; }
+  .app { max-width: 900px; margin: 0 auto; padding: 24px 20px; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h1 span { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
+  h2 { font-size: 15px; font-weight: 600; color: var(--muted); text-transform: uppercase;
+       letter-spacing: 1px; margin: 28px 0 12px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: 10px; padding: 18px; margin-bottom: 14px; }
+
+  /* Buttons */
+  button { border: none; border-radius: 6px; padding: 8px 18px; font-size: 13px;
+           font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-start  { background: var(--accent); color: #fff; }
+  .btn-pause  { background: var(--warn); color: #222; }
+  .btn-resume { background: var(--accent2); color: #111; }
+  .btn-stop   { background: var(--danger); color: #fff; }
+  .btn-sm     { padding: 5px 12px; font-size: 12px; }
+  .btn-ghost  { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--accent); }
+
+  /* Inputs */
+  input[type=text], select { background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 12px; color: var(--text); font-size: 13px; width: 100%; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
+
+  /* Path list */
+  .path-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .path-row input { flex: 1; }
+
+  /* Progress */
+  .progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; margin: 8px 0; }
+  .progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; border-radius: 3px; }
+
+  .status-badge { display: inline-block; padding: 3px 10px; border-radius: 12px;
+                  font-size: 11px; font-weight: 700; text-transform: uppercase; }
+  .status-idle    { background: var(--surface2); color: var(--muted); }
+  .status-running { background: rgba(108,140,255,0.15); color: var(--accent); }
+  .status-paused  { background: rgba(255,217,61,0.15); color: var(--warn); }
+  .status-klaar   { background: rgba(81,207,102,0.15); color: var(--success); }
+  .status-fout    { background: rgba(255,107,107,0.15); color: var(--danger); }
+  .status-stopping { background: rgba(255,107,107,0.1); color: var(--warn); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+  .stat-card { background: var(--surface2); border-radius: 8px; padding: 14px; text-align: center; }
+  .stat-card .num { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .stat-card .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+
+  .error-log { max-height: 180px; overflow-y: auto; font-size: 12px; font-family: 'SF Mono', monospace; }
+  .error-row { padding: 4px 0; border-bottom: 1px solid var(--border); color: var(--danger); }
+  .error-row .file { color: var(--muted); }
+
+  /* Browse modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex;
+                   align-items: center; justify-content: center; z-index: 100; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+           padding: 20px; width: 500px; max-height: 70vh; display: flex; flex-direction: column; }
+  .modal h3 { font-size: 15px; margin-bottom: 10px; }
+  .modal .path-display { font-size: 12px; color: var(--muted); font-family: monospace;
+                         margin-bottom: 10px; padding: 6px 10px; background: var(--surface2);
+                         border-radius: 4px; word-break: break-all; }
+  .dir-list { flex: 1; overflow-y: auto; max-height: 350px; }
+  .dir-item { padding: 6px 10px; cursor: pointer; border-radius: 4px; font-size: 13px;
+              display: flex; align-items: center; gap: 6px; }
+  .dir-item:hover { background: var(--surface2); }
+  .dir-item.is-dir { color: var(--accent); font-weight: 500; }
+  .dir-item.is-file { color: var(--muted); }
+  .modal-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+
+  .test-modal { width: 620px; max-height: 85vh; }
+  .test-modal .section { margin-bottom: 14px; }
+  .test-modal .section-title { font-size: 11px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .test-modal .preview-text { font-size: 12px; font-family: 'SF Mono', monospace;
+    background: var(--surface2); padding: 10px; border-radius: 6px; white-space: pre-wrap;
+    max-height: 100px; overflow-y: auto; color: var(--text); line-height: 1.4; }
+  .test-modal .field { display: flex; gap: 8px; font-size: 13px; padding: 3px 0; }
+  .test-modal .field .lbl { color: var(--muted); min-width: 100px; }
+  .test-modal .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .test-modal .tag { background: var(--surface2); border-radius: 4px; padding: 2px 8px;
+    font-size: 11px; color: var(--accent); }
+  .btn-test { background: var(--surface2); border: 1px solid var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ── API helpers ──────────────────────────────────────────────────────────────
+const api = {
+  get: (url) => fetch(url).then(r => r.json()),
+  post: (url, data) => fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: data ? JSON.stringify(data) : '{}',
+  }).then(r => r.json()),
+};
+
+// ── DirectoryBrowser Modal ───────────────────────────────────────────────────
+function DirBrowser({ open, onSelect, onClose, startPath }) {
+  const [items, setItems] = useState([]);
+  const [current, setCurrent] = useState(startPath || '/');
+  const [parent, setParent] = useState(null);
+
+  const browse = useCallback((path) => {
+    api.get(`/api/browse?path=${encodeURIComponent(path)}`).then(data => {
+      if (data.error) return;
+      setItems(data.items || []);
+      setCurrent(data.huidig);
+      setParent(data.parent);
+    });
+  }, []);
+
+  useEffect(() => { if (open) browse(startPath || '/'); }, [open, startPath, browse]);
+
+  if (!open) return null;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h3>Kies map</h3>
+        <div className="path-display">{current}</div>
+        <div className="dir-list">
+          {parent && (
+            <div className="dir-item is-dir" onClick={() => browse(parent)}>
+              .. (omhoog)
+            </div>
+          )}
+          {items.filter(i => i.is_dir).map(i => (
+            <div key={i.pad} className="dir-item is-dir" onClick={() => browse(i.pad)}>
+              {i.naam}/
+            </div>
+          ))}
+        </div>
+        <div className="modal-actions">
+          <button className="btn-ghost btn-sm" onClick={onClose}>Annuleer</button>
+          <button className="btn-start btn-sm" onClick={() => { onSelect(current); onClose(); }}>
+            Selecteer deze map
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Config Section ───────────────────────────────────────────────────────────
+function ConfigSection({ config, setConfig, saveConfig }) {
+  const [browseTarget, setBrowseTarget] = useState(null); // 'corpus' | index number
+  const [browseOpen, setBrowseOpen] = useState(false);
+
+  const openBrowse = (target) => { setBrowseTarget(target); setBrowseOpen(true); };
+  const handleSelect = (path) => {
+    if (browseTarget === 'corpus') {
+      setConfig(c => ({ ...c, corpus_pad: path }));
+    } else if (typeof browseTarget === 'number') {
+      setConfig(c => {
+        const b = [...c.bronnen]; b[browseTarget] = path;
+        return { ...c, bronnen: b };
+      });
+    }
+  };
+
+  const addBron = () => setConfig(c => ({ ...c, bronnen: [...c.bronnen, ''] }));
+  const removeBron = (i) => setConfig(c => ({ ...c, bronnen: c.bronnen.filter((_, j) => j !== i) }));
+  const startPath = browseTarget === 'corpus' ? config.corpus_pad
+    : typeof browseTarget === 'number' ? (config.bronnen[browseTarget] || '/') : '/';
+
+  return (
+    <div className="card">
+      <label>Corpus output pad</label>
+      <div className="path-row">
+        <input type="text" value={config.corpus_pad || ''}
+          onChange={e => setConfig(c => ({ ...c, corpus_pad: e.target.value }))} />
+        <button className="btn-ghost btn-sm" onClick={() => openBrowse('corpus')}>Blader</button>
+      </div>
+
+      <label style={{marginTop:12}}>Bronpaden</label>
+      {(config.bronnen || []).map((b, i) => (
+        <div className="path-row" key={i}>
+          <input type="text" value={b}
+            onChange={e => setConfig(c => {
+              const br = [...c.bronnen]; br[i] = e.target.value;
+              return { ...c, bronnen: br };
+            })} />
+          <button className="btn-ghost btn-sm" onClick={() => openBrowse(i)}>Blader</button>
+          <button className="btn-stop btn-sm" onClick={() => removeBron(i)}>x</button>
+        </div>
+      ))}
+      <div style={{display:'flex', gap:8, marginTop:8}}>
+        <button className="btn-ghost btn-sm" onClick={addBron}>+ Bron toevoegen</button>
+        <button className="btn-start btn-sm" onClick={saveConfig}>Opslaan</button>
+      </div>
+
+      <label style={{marginTop:12}}>Backend</label>
+      <select value={config.backend || 'ollama'}
+        onChange={e => setConfig(c => ({ ...c, backend: e.target.value }))}>
+        <option value="ollama">Ollama — gemma3:12b (lokaal, eerste pass)</option>
+        <option value="anthropic">Anthropic — Claude (alleen)</option>
+      </select>
+
+      <label style={{marginTop:12}}>
+        <input type="checkbox" checked={config.tweede_pass !== false}
+          onChange={e => setConfig(c => ({ ...c, tweede_pass: e.target.checked }))}
+          style={{marginRight:6}} />
+        Tweede pass met Claude (verfijning na Ollama)
+      </label>
+
+      <DirBrowser open={browseOpen} onClose={() => setBrowseOpen(false)}
+        onSelect={handleSelect} startPath={startPath} />
+    </div>
+  );
+}
+
+// ── Test Result Modal ─────────────────────────────────────────────────────────
+function TestResultModal({ data, onClose }) {
+  if (!data) return null;
+  const v = data.verrijking || {};
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal test-modal" onClick={e => e.stopPropagation()}
+           style={{overflowY:'auto'}}>
+        <h3>Test resultaat</h3>
+
+        <div className="section">
+          <div className="section-title">Bron</div>
+          <div className="field"><span className="lbl">Bestand:</span><span>{data.bestandsnaam}</span></div>
+          <div className="field"><span className="lbl">Pad:</span><span style={{fontSize:11, wordBreak:'break-all'}}>{data.bestand}</span></div>
+          <div className="field"><span className="lbl">Formaat:</span><span>{data.formaat}</span></div>
+          <div className="field"><span className="lbl">Methode:</span><span>{data.methode}</span></div>
+          <div className="field"><span className="lbl">Model:</span><span style={{color:'var(--accent)'}}>{data.model} ({data.backend})</span></div>
+        </div>
+
+        {data.tekst_preview && (
+          <div className="section">
+            <div className="section-title">Tekst (eerste 300 tekens)</div>
+            <div className="preview-text">{data.tekst_preview}</div>
+          </div>
+        )}
+
+        <div className="section">
+          <div className="section-title">Verrijking</div>
+          <div className="field"><span className="lbl">Type:</span><span>{v.type}</span></div>
+          <div className="field"><span className="lbl">Samenvatting:</span><span>{v.samenvatting}</span></div>
+          <div className="field"><span className="lbl">Taal:</span><span>{v.taal}</span></div>
+          <div className="field"><span className="lbl">Toon:</span><span>{v.emotionele_toon}</span></div>
+          {v.themas && v.themas.length > 0 && (
+            <div className="field"><span className="lbl">Thema's:</span>
+              <div className="tags">{v.themas.map((t,i) => <span className="tag" key={i}>{t}</span>)}</div>
+            </div>
+          )}
+          {v.actoren && v.actoren.length > 0 && (
+            <div className="field"><span className="lbl">Actoren:</span>
+              <div className="tags">{v.actoren.map((a,i) => <span className="tag" key={i}>{a.naam} ({a.rol})</span>)}</div>
+            </div>
+          )}
+          {v.fout && <div className="field"><span className="lbl" style={{color:'var(--danger)'}}>Fout:</span><span style={{color:'var(--danger)'}}>{v.fout}</span></div>}
+        </div>
+
+        {v.narratief && (
+          <div className="section">
+            <div className="section-title">Narratief</div>
+            <div className="field"><span className="lbl">Spanning:</span><span>{v.narratief.spanning}</span></div>
+            <div className="field"><span className="lbl">Keerpunt:</span><span>{v.narratief.keerpunt ? 'Ja' : 'Nee'}</span></div>
+            {v.narratief.notitie && <div className="field"><span className="lbl">Notitie:</span><span>{v.narratief.notitie}</span></div>}
+          </div>
+        )}
+
+        {data.datum && (
+          <div className="section">
+            <div className="section-title">Datering</div>
+            <div className="field"><span className="lbl">Geschat:</span><span>{data.datum.datum_geschat || '?'}</span></div>
+            <div className="field"><span className="lbl">Zekerheid:</span><span>{data.datum.zekerheid}</span></div>
+          </div>
+        )}
+
+        <div className="modal-actions">
+          <button className="btn-start btn-sm" onClick={onClose}>Sluiten</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Pipeline Controls ────────────────────────────────────────────────────────
+function PipelineControls({ pipeStatus }) {
+  const s = pipeStatus.status;
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+
+  const runTest = () => {
+    setTesting(true);
+    api.post('/api/pipeline/test')
+      .then(data => { setTestResult(data); setTesting(false); })
+      .catch(() => setTesting(false));
+  };
+
+  return (
+    <>
+      <div className="card">
+        <div style={{display:'flex', alignItems:'center', gap:12, flexWrap:'wrap'}}>
+          <span className={`status-badge status-${s}`}>{s}</span>
+
+          <button className="btn-start" disabled={s === 'running' || s === 'paused' || s === 'stopping'}
+            onClick={() => api.post('/api/pipeline/start')}>Start</button>
+          <button className="btn-pause" disabled={s !== 'running'}
+            onClick={() => api.post('/api/pipeline/pause')}>Pauze</button>
+          <button className="btn-resume" disabled={s !== 'paused'}
+            onClick={() => api.post('/api/pipeline/resume')}>Hervat</button>
+          <button className="btn-stop" disabled={s !== 'running' && s !== 'paused'}
+            onClick={() => api.post('/api/pipeline/stop')}>Stop</button>
+          <button className="btn-test" disabled={testing || s === 'running'}
+            onClick={runTest}>{testing ? 'Bezig...' : 'Test'}</button>
+
+          {pipeStatus.duur_seconden != null && (
+            <span style={{color:'var(--muted)', fontSize:12, marginLeft:'auto'}}>
+              {Math.floor(pipeStatus.duur_seconden / 60)}m {pipeStatus.duur_seconden % 60}s
+            </span>
+          )}
+        </div>
+      </div>
+      {testResult && <TestResultModal data={testResult} onClose={() => setTestResult(null)} />}
+    </>
+  );
+}
+
+// ── Progress Section ─────────────────────────────────────────────────────────
+function ProgressSection({ pipeStatus }) {
+  const v = pipeStatus.voortgang || {};
+  const pct = v.totaal ? Math.round((v.nummer / v.totaal) * 100) : 0;
+  const fouten = pipeStatus.fouten || [];
+
+  return (
+    <div className="card">
+      {v.fase && (
+        <>
+          <div style={{display:'flex', justifyContent:'space-between', fontSize:13}}>
+            <span>Fase: <strong>{v.fase}</strong></span>
+            {v.totaal > 0 && <span>{v.nummer || 0} / {v.totaal}</span>}
+          </div>
+          {v.totaal > 0 && (
+            <div className="progress-bar">
+              <div className="progress-fill" style={{width: `${pct}%`}} />
+            </div>
+          )}
+          {v.bestand && (
+            <div style={{fontSize:12, color:'var(--muted)', marginTop:4, fontFamily:'monospace',
+                         overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+              {v.bestand}
+            </div>
+          )}
+          {v.bron && (
+            <div style={{fontSize:12, color:'var(--muted)', marginTop:4, fontFamily:'monospace'}}>
+              Bron: {v.bron}
+            </div>
+          )}
+        </>
+      )}
+      {!v.fase && <div style={{color:'var(--muted)', fontSize:13}}>Geen actieve verwerking</div>}
+
+      {fouten.length > 0 && (
+        <>
+          <div style={{marginTop:12, fontSize:12, color:'var(--danger)', fontWeight:600}}>
+            Fouten ({fouten.length})
+          </div>
+          <div className="error-log">
+            {fouten.map((f, i) => (
+              <div className="error-row" key={i}>
+                <span className="file">{f.bestand}</span> — {f.fout}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Stats Section ────────────────────────────────────────────────────────────
+function StatsSection({ stats }) {
+  if (!stats || stats.totaal === 0) {
+    return <div className="card" style={{color:'var(--muted)', fontSize:13}}>Nog geen corpus data</div>;
+  }
+  const types = Object.entries(stats.per_type || {}).sort((a,b) => b[1] - a[1]);
+  const jaren = Object.keys(stats.dichtheid || {}).sort();
+
+  return (
+    <div className="card">
+      <div className="stat-grid">
+        <div className="stat-card">
+          <div className="num">{stats.totaal}</div>
+          <div className="lbl">Documenten</div>
+        </div>
+        <div className="stat-card">
+          <div className="num">{types.length}</div>
+          <div className="lbl">Types</div>
+        </div>
+        <div className="stat-card">
+          <div className="num">{jaren.length > 0 ? `${jaren[0]}–${jaren[jaren.length-1]}` : '—'}</div>
+          <div className="lbl">Tijdspanne</div>
+        </div>
+      </div>
+      {types.length > 0 && (
+        <div style={{marginTop:14}}>
+          {types.map(([type, n]) => (
+            <div key={type} style={{display:'flex', justifyContent:'space-between', fontSize:13,
+                                    padding:'3px 0', borderBottom:'1px solid var(--border)'}}>
+              <span>{type}</span><span style={{color:'var(--muted)'}}>{n}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── App ──────────────────────────────────────────────────────────────────────
+function App() {
+  const [config, setConfig] = useState({ corpus_pad: '', bronnen: [], backend: 'ollama', tweede_pass: true });
+  const [pipeStatus, setPipeStatus] = useState({ status: 'idle', voortgang: {}, fouten: [] });
+  const [stats, setStats] = useState(null);
+  const [saved, setSaved] = useState(false);
+
+  // Load config on mount
+  useEffect(() => { api.get('/api/config').then(setConfig); }, []);
+
+  // Poll status
+  useEffect(() => {
+    const poll = () => api.get('/api/pipeline/status').then(setPipeStatus).catch(() => {});
+    poll();
+    const iv = setInterval(poll, 2000);
+    return () => clearInterval(iv);
+  }, []);
+
+  // Load stats periodically
+  useEffect(() => {
+    const load = () => api.get('/api/stats').then(setStats).catch(() => {});
+    load();
+    const iv = setInterval(load, 10000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const saveConfig = () => {
+    api.post('/api/config', config).then(() => {
+      setSaved(true); setTimeout(() => setSaved(false), 2000);
+    });
+  };
+
+  return (
+    <div className="app">
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+        <h1>Dagboekmaker <span>beheer</span></h1>
+        <div style={{display:'flex', gap:16}}>
+          <a href="/actoren" style={{fontSize:13, color:'var(--accent)', textDecoration:'none'}}>Actoren</a>
+          <a href="/formaten" style={{fontSize:13, color:'var(--accent)', textDecoration:'none'}}>Formaten</a>
+          <a href="/dashboard" style={{fontSize:13, color:'var(--accent)', textDecoration:'none'}}>Dashboard</a>
+        </div>
+      </div>
+
+      <h2>Configuratie {saved && <span style={{color:'var(--success)', fontSize:11}}>Opgeslagen</span>}</h2>
+      <ConfigSection config={config} setConfig={setConfig} saveConfig={saveConfig} />
+
+      <h2>Pipeline</h2>
+      <PipelineControls pipeStatus={pipeStatus} />
+      <ProgressSection pipeStatus={pipeStatus} />
+
+      <h2>Corpus</h2>
+      <StatsSection stats={stats} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

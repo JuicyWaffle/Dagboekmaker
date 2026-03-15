@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dagboekmaker — Formaten & Types</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #242836;
+    --border: #2e3345; --text: #e0e0e8; --muted: #8888a0;
+    --accent: #6c8cff; --accent2: #4ecdc4; --danger: #ff6b6b;
+    --warn: #ffd93d; --success: #51cf66;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif;
+         background: var(--bg); color: var(--text); line-height:1.5; }
+  .app { max-width: 900px; margin: 0 auto; padding: 24px 20px; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h1 span { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
+  h2 { font-size: 15px; font-weight: 600; color: var(--muted); text-transform: uppercase;
+       letter-spacing: 1px; margin: 28px 0 12px; }
+
+  .nav { display: flex; gap: 16px; margin-bottom: 24px; font-size: 13px; }
+  .nav a { color: var(--accent); text-decoration: none; }
+  .nav a:hover { text-decoration: underline; }
+
+  .summary { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .summary-card { background: var(--surface); border-radius: 8px; padding: 12px 18px;
+    flex: 1; min-width: 120px; }
+  .summary-card .num { font-size: 26px; font-weight: 700; color: var(--accent); }
+  .summary-card .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: 10px; padding: 16px; margin-bottom: 10px; }
+  .card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex;
+                align-items: center; gap: 8px; }
+  .card-title .count { font-size: 11px; color: var(--muted); background: var(--surface2);
+                       padding: 1px 7px; border-radius: 8px; }
+
+  .ext-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ext-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+              padding: 3px 10px; font-size: 12px; font-family: 'SF Mono', monospace;
+              color: var(--accent); }
+
+  .type-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .type-group { margin-bottom: 16px; }
+  .type-group-label { font-size: 12px; font-weight: 600; color: var(--muted);
+                      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .type-chip { display: inline-block; background: var(--surface2); border: 1px solid var(--border);
+               border-radius: 6px; padding: 4px 12px; font-size: 13px; }
+  .type-chip.persoonlijk { border-color: rgba(108,140,255,0.3); color: var(--accent); }
+  .type-chip.communicatie { border-color: rgba(78,205,196,0.3); color: var(--accent2); }
+  .type-chip.zakelijk { border-color: rgba(255,217,61,0.3); color: var(--warn); }
+  .type-chip.financieel { border-color: rgba(255,107,107,0.3); color: var(--danger); }
+  .type-chip.officieel { border-color: rgba(81,207,102,0.3); color: var(--success); }
+  .type-chip.creatief { border-color: rgba(168,130,255,0.3); color: #a882ff; }
+  .type-chip.media { border-color: rgba(255,166,77,0.3); color: #ffa64d; }
+  .type-chip.overig { border-color: var(--border); color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const TYPE_CATEGORIEEN = {
+  "Persoonlijk":  { class: "persoonlijk", types: ["dagboek","brief","notitie","foto","ansichtkaart"] },
+  "Communicatie":  { class: "communicatie", types: ["e-mail","sms","chat","fax"] },
+  "Zakelijk":     { class: "zakelijk", types: ["rapport","memo","notulen","presentatie","cv","sollicitatie"] },
+  "Financieel & Juridisch": { class: "financieel", types: ["financieel","factuur","contract","akte","belasting","verzekering"] },
+  "Officieel":    { class: "officieel", types: ["paspoort","rijbewijs","diploma","certificaat","attest","medisch","recept"] },
+  "Creatief":     { class: "creatief", types: ["gedicht","verhaal","essay","manuscript","scenario"] },
+  "Media":        { class: "media", types: ["artikel","knipsel","blog","forumpost"] },
+  "Huishoudelijk":{ class: "overig", types: ["recept_koken","boodschappenlijst","to-do"] },
+  "Technisch":    { class: "overig", types: ["code","configuratie","logbestand"] },
+  "Overig":       { class: "overig", types: ["onbekend"] },
+};
+
+function App() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/formaten').then(r => r.json()).then(setData);
+  }, []);
+
+  if (!data) return <div className="app" style={{color:'var(--muted)'}}>Laden...</div>;
+
+  return (
+    <div className="app">
+      <h1>Dagboekmaker <span>formaten & types</span></h1>
+      <div className="nav">
+        <a href="/">&larr; Beheer</a>
+        <a href="/actoren">Actoren</a>
+        <a href="/dashboard">Dashboard</a>
+      </div>
+
+      <div className="summary">
+        <div className="summary-card">
+          <div className="num">{data.totaal_extensies}</div>
+          <div className="lbl">Bestandsformaten</div>
+        </div>
+        <div className="summary-card">
+          <div className="num">{data.formaten.length}</div>
+          <div className="lbl">Extractiemethodes</div>
+        </div>
+        <div className="summary-card">
+          <div className="num">{data.document_types.length}</div>
+          <div className="lbl">Inhoudstypes</div>
+        </div>
+      </div>
+
+      <h2>Ondersteunde bestandsformaten</h2>
+      {data.formaten.map(f => (
+        <div className="card" key={f.methode}>
+          <div className="card-title">
+            {f.categorie}
+            <span className="count">{f.extensies.length} formaten</span>
+            <span style={{fontSize:11, color:'var(--muted)', marginLeft:'auto'}}>via {f.methode}</span>
+          </div>
+          <div className="ext-grid">
+            {f.extensies.map(e => <span className="ext-chip" key={e}>{e}</span>)}
+          </div>
+        </div>
+      ))}
+
+      <h2>Inhoudelijke documenttypes</h2>
+      <p style={{fontSize:13, color:'var(--muted)', marginBottom:16}}>
+        Het LLM classificeert elk document in een van deze types op basis van de inhoud.
+      </p>
+      {Object.entries(TYPE_CATEGORIEEN).map(([label, info]) => (
+        <div className="type-group" key={label}>
+          <div className="type-group-label">{label}</div>
+          <div className="type-grid">
+            {info.types.map(t => (
+              <span className={`type-chip ${info.class}`} key={t}>{t}</span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
