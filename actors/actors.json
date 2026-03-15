@@ -1,44 +1,1432 @@
 {
   "actor_zelf": {
     "id": "actor_zelf",
-    "naam": "Stijn",
-    "aliassen": ["ik", "S."],
+    "naam": "George Vayssier",
+    "aliassen": [
+      "George",
+      "ik",
+      "G."
+    ],
     "type": "persoon",
     "relatie_tot_auteur": "zelf",
     "geboorte": "1975",
     "overlijden": null,
     "rol_in_verhaal": "protagonist",
     "narratieve_arc": "Van kind naar volwassene; zoektocht naar identiteit en thuis",
-    "eerste_vermelding": "1980-01-01",
+    "eerste_vermelding": null,
     "laatste_vermelding": null,
-    "documenten_count": 847
+    "documenten_count": 0
   },
-  "actor_moeder": {
-    "id": "actor_moeder",
-    "naam": "Maria",
-    "aliassen": ["Mama", "Moeder", "Ma", "Mam"],
+  "actor_paul": {
+    "id": "actor_paul",
+    "naam": "Paul Vayssier",
+    "aliassen": [
+      "Paul"
+    ],
     "type": "persoon",
-    "relatie_tot_auteur": "moeder",
-    "geboorte": "1948",
+    "relatie_tot_auteur": "broer",
+    "geboorte": null,
     "overlijden": null,
-    "rol_in_verhaal": "anker",
-    "narratieve_arc": "Constante aanwezigheid; steunpunt in crisisperiodes",
-    "eerste_vermelding": "1975-01-01",
+    "rol_in_verhaal": "familie",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
     "laatste_vermelding": null,
-    "documenten_count": 312
+    "documenten_count": 0
   },
   "actor_vader": {
     "id": "actor_vader",
-    "naam": "Jef",
-    "aliassen": ["Papa", "Vader", "Pa"],
+    "naam": "Jean Jacobus Adrianus Vayssier",
+    "aliassen": [
+      "Jean",
+      "Papa",
+      "Vader",
+      "Pa"
+    ],
     "type": "persoon",
     "relatie_tot_auteur": "vader",
-    "geboorte": "1944",
-    "overlijden": "1998-09-03",
+    "geboorte": "1908-12-20",
+    "overlijden": "1996-04-02",
     "rol_in_verhaal": "verlies",
-    "narratieve_arc": "Aanwezig tot midden jaren '90; ziekte en overlijden vormen centraal keerpunt",
-    "eerste_vermelding": "1975-01-01",
-    "laatste_vermelding": "1998-08-20",
-    "documenten_count": 124
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_hans": {
+    "id": "actor_hans",
+    "naam": "Hans Vayssier",
+    "aliassen": [
+      "Hans"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "broer",
+    "geboorte": "1939-01-29",
+    "overlijden": "1992-07-01",
+    "rol_in_verhaal": "verlies",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_katelijne": {
+    "id": "actor_katelijne",
+    "naam": "Katelijne Vayssier",
+    "aliassen": [
+      "Katelijne"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "nichtje",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "familie",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_liesbeth": {
+    "id": "actor_liesbeth",
+    "naam": "Liesbeth Vayssier",
+    "aliassen": [
+      "Liesbeth"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "nichtje",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "familie",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_maarten": {
+    "id": "actor_maarten",
+    "naam": "Maarten Vayssier",
+    "aliassen": [
+      "Maarten"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "neef",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "familie",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_jacqueline": {
+    "id": "actor_jacqueline",
+    "naam": "Jacqueline Keeman",
+    "aliassen": [
+      "Jacqueline",
+      "J",
+      "J."
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "geliefde",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "grote liefde, vriendin in Doetinchem",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_c97cfa79": {
+    "id": "actor_c97cfa79",
+    "naam": "Rosa Maria Hartmann",
+    "aliassen": [
+      "Rosa Maria",
+      "RM",
+      "R.M."
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "geliefde",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "vriendin in Wenen / Oostenrijk",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_1ade41bf": {
+    "id": "actor_1ade41bf",
+    "naam": "Lin Luan",
+    "aliassen": [
+      "Lin",
+      "MYL",
+      "K.L."
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "geliefde",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "Chinese vriendin, schrijft brieven",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_2298625f": {
+    "id": "actor_2298625f",
+    "naam": "Natalia",
+    "aliassen": [
+      "Natalia"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "geliefde",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "vroegere Russische vriendin, verjaardag 17 feb",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_4645b9ef": {
+    "id": "actor_4645b9ef",
+    "naam": "Christiane",
+    "aliassen": [
+      "Christiane"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "geliefde",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "vriendin in Singapore / Europa",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_0febc363": {
+    "id": "actor_0febc363",
+    "naam": "Heidi",
+    "aliassen": [
+      "Heidi"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "vriendin",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "vriendin, heeft pasgeboren baby",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_eb087784": {
+    "id": "actor_eb087784",
+    "naam": "Stefan",
+    "aliassen": [
+      "Stefan"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "partner van Heidi",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_c4ed14e2": {
+    "id": "actor_c4ed14e2",
+    "naam": "Lisa",
+    "aliassen": [
+      "Lisa"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "vriendin",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "Russische vriendin, zus van Inna",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_4830c589": {
+    "id": "actor_4830c589",
+    "naam": "Inna",
+    "aliassen": [
+      "Inna"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "zus van Lisa, zwanger / bevallen",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_6791eb67": {
+    "id": "actor_6791eb67",
+    "naam": "Anatoly",
+    "aliassen": [
+      "Anatoly"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "baby van Inna",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_e3a7fce1": {
+    "id": "actor_e3a7fce1",
+    "naam": "Maja",
+    "aliassen": [
+      "Maja"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "vriendin van Natalia, bemiddelaar",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_f1f2484c": {
+    "id": "actor_f1f2484c",
+    "naam": "Riet",
+    "aliassen": [
+      "Riet"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "vriendin",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "oude vriendin, ziek (kanker?)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_4aeb195c": {
+    "id": "actor_4aeb195c",
+    "naam": "Ad",
+    "aliassen": [
+      "Ad"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "partner van Riet",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_a095fa47": {
+    "id": "actor_a095fa47",
+    "naam": "Victoria Kovalenchikova",
+    "aliassen": [
+      "Victoria"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "kunstenares, galeriehouder Amsterdam",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_82c26ddf": {
+    "id": "actor_82c26ddf",
+    "naam": "Fietje",
+    "aliassen": [
+      "Fietje"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "vriendin van J, mee op Italiereis",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_caaa416c": {
+    "id": "actor_caaa416c",
+    "naam": "Petra",
+    "aliassen": [
+      "Petra"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "vriendin van J (Eindhoven)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_f5bfdbab": {
+    "id": "actor_f5bfdbab",
+    "naam": "Elly van der Penne",
+    "aliassen": [
+      "Elly"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "reünievriendin van J",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_533b2173": {
+    "id": "actor_533b2173",
+    "naam": "Ingrid",
+    "aliassen": [
+      "Ingrid"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "kennis van RM, geopereerd",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_39f6f953": {
+    "id": "actor_39f6f953",
+    "naam": "Dick",
+    "aliassen": [
+      "Dick"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "vroegere barkeeper café Pieper Amsterdam",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_a573b540": {
+    "id": "actor_a573b540",
+    "naam": "Len",
+    "aliassen": [
+      "Len"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "kennis bij Jaap (in het huis Vlake)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_4923c783": {
+    "id": "actor_4923c783",
+    "naam": "Irina",
+    "aliassen": [
+      "Irina"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "IAEA-collega (Wenen)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_9824c3c4": {
+    "id": "actor_9824c3c4",
+    "naam": "Mike Modro",
+    "aliassen": [
+      "Mike",
+      "Modro"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "IAEA-collega, leidinggevende",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_2212ec59": {
+    "id": "actor_2212ec59",
+    "naam": "Radim",
+    "aliassen": [
+      "Radim"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "IAEA-collega, Tsjechisch",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_e85f9f6e": {
+    "id": "actor_e85f9f6e",
+    "naam": "Mamdouh",
+    "aliassen": [
+      "Mamdouh",
+      "Mamdough"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "IAEA-collega",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_a5d1dfef": {
+    "id": "actor_a5d1dfef",
+    "naam": "Csilla",
+    "aliassen": [
+      "Csilla"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "IAEA-collega",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_abc481a1": {
+    "id": "actor_abc481a1",
+    "naam": "Sukho",
+    "aliassen": [
+      "Sukho"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "IAEA-collega, kamer in agentschap",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_69d40893": {
+    "id": "actor_69d40893",
+    "naam": "Maurine",
+    "aliassen": [
+      "Maurine"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "IAEA-collega",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_cbdb0cc7": {
+    "id": "actor_cbdb0cc7",
+    "naam": "Charles",
+    "aliassen": [
+      "Charles"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "IAEA-collega",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_63d9c45f": {
+    "id": "actor_63d9c45f",
+    "naam": "Nadia",
+    "aliassen": [
+      "Nadia"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "IAEA-collega",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_7b52b030": {
+    "id": "actor_7b52b030",
+    "naam": "Jozef Misak",
+    "aliassen": [
+      "Jozef",
+      "Misak"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "IAEA-collega, vraagt medewerking Argentinië",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_dbcbc4ab": {
+    "id": "actor_dbcbc4ab",
+    "naam": "Bob Lutz",
+    "aliassen": [
+      "Bob Lutz"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "IAEA-collega / vakgenoot",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_dbf34e71": {
+    "id": "actor_dbf34e71",
+    "naam": "Bob Prior",
+    "aliassen": [
+      "Bob Prior"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "collega, vraagt karakterverklaring",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_6418c0de": {
+    "id": "actor_6418c0de",
+    "naam": "Michel Hugon",
+    "aliassen": [
+      "Michel",
+      "Hugon"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "vakgenoot",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "vakgenoot, FISA-conferentie Praag",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_06bfea39": {
+    "id": "actor_06bfea39",
+    "naam": "Dr. Grözingen",
+    "aliassen": [
+      "Grözingen"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "GKN Stuttgart, leidinggevende",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_4f586e0c": {
+    "id": "actor_4f586e0c",
+    "naam": "Herr Kern",
+    "aliassen": [
+      "Kern"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "GKN Stuttgart, contactpersoon",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_79812f90": {
+    "id": "actor_79812f90",
+    "naam": "Frau Dr. Hauer",
+    "aliassen": [
+      "Hauer"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "collega",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "contactpersoon GKN / Oostenrijkse instantie",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_ac8b4fa5": {
+    "id": "actor_ac8b4fa5",
+    "naam": "Herr Bajak",
+    "aliassen": [
+      "Bajak",
+      "Bajak sr.",
+      "Bajak jr."
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "Weense makelaar (Wittegasse/G4)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_b700c4ee": {
+    "id": "actor_b700c4ee",
+    "naam": "Frau Bogner",
+    "aliassen": [
+      "Bogner"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "medewerkster makelaarskantoor Bajak",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_698209af": {
+    "id": "actor_698209af",
+    "naam": "Dr. Lattenmayer",
+    "aliassen": [
+      "Lattenmayer",
+      "Lattenmeyer",
+      "Herr Lattenmayer"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "makelaar / bemiddelaar Jakubec",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_37da31aa": {
+    "id": "actor_37da31aa",
+    "naam": "Dr. Jakubec",
+    "aliassen": [
+      "Jakubec",
+      "Frau Jakubec"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "verkoopster woning Wenen",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_7fd2c765": {
+    "id": "actor_7fd2c765",
+    "naam": "Herr Issel",
+    "aliassen": [
+      "Issel"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "taxateur Wenen (Gloriettegasse)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_51ab9410": {
+    "id": "actor_51ab9410",
+    "naam": "Dr. Alturban",
+    "aliassen": [
+      "Alturban"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "betrokken bij woning Gloriettegasse",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_3e9f7008": {
+    "id": "actor_3e9f7008",
+    "naam": "Dr. Huber",
+    "aliassen": [
+      "Huber"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "medisch",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "gynaecoloog Wenen",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_ac76c6a4": {
+    "id": "actor_ac76c6a4",
+    "naam": "Mw. Muis",
+    "aliassen": [
+      "Muis"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "medisch",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "huisarts",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_bc28e6d1": {
+    "id": "actor_bc28e6d1",
+    "naam": "Dhr. Van Noord",
+    "aliassen": [
+      "Van Noord"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "Rabobank Goes (ziek, sterfgeval)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_e14dcc1e": {
+    "id": "actor_e14dcc1e",
+    "naam": "Zuidweg",
+    "aliassen": [
+      "Zuidweg",
+      "Dhr. Z"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "Rabobank medewerker",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_fe0aef98": {
+    "id": "actor_fe0aef98",
+    "naam": "Jaap",
+    "aliassen": [
+      "Jaap"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "financieel adviseur / zakenman, bezoekt Vlake",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_addb5379": {
+    "id": "actor_addb5379",
+    "naam": "Van Beukering",
+    "aliassen": [
+      "Van Beukering"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "makelaar Leiden (broer)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_c3847f96": {
+    "id": "actor_c3847f96",
+    "naam": "Paul Noble",
+    "aliassen": [
+      "Paul Noble",
+      "Noble"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "Londens financieel adviseur (telefonisch)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_ca0f982b": {
+    "id": "actor_ca0f982b",
+    "naam": "Reijnders",
+    "aliassen": [
+      "Reijnders"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "belastingexpert emigratiebeurs Utrecht",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_5f65f698": {
+    "id": "actor_5f65f698",
+    "naam": "Wim",
+    "aliassen": [
+      "Wim"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "levert gegevens voor BTW-aangifte",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_4ff61525": {
+    "id": "actor_4ff61525",
+    "naam": "Han",
+    "aliassen": [
+      "Han"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "buurman",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "buurman Vlake, zorgt voor haantje",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_5971d49b": {
+    "id": "actor_5971d49b",
+    "naam": "Bea",
+    "aliassen": [
+      "Bea"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "buurvrouw",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "buurvrouw Vlake, Han's vrouw",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_70860de7": {
+    "id": "actor_70860de7",
+    "naam": "Inge",
+    "aliassen": [
+      "Inge"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "buurvrouw",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "buurvrouw Vlake",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_9a47fa62": {
+    "id": "actor_9a47fa62",
+    "naam": "Adriana",
+    "aliassen": [
+      "Adriana",
+      "Adri"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "buurman",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "buurman Leiden, eigenaar berk",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_9877ed10": {
+    "id": "actor_9877ed10",
+    "naam": "Cora",
+    "aliassen": [
+      "Cora"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "dochter van Adriana",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_e132a188": {
+    "id": "actor_e132a188",
+    "naam": "Meskel",
+    "aliassen": [
+      "Meskel"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "buurman",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "buurman Leiden (Ethiopisch)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_f1b5a91d": {
+    "id": "actor_f1b5a91d",
+    "naam": "Mark",
+    "aliassen": [
+      "Mark"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "buurman / kennis Leiden",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_c6d8aebe": {
+    "id": "actor_c6d8aebe",
+    "naam": "Frans",
+    "aliassen": [
+      "Frans"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "kennis bij feest Riet",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_9a0378ef": {
+    "id": "actor_9a0378ef",
+    "naam": "Wil",
+    "aliassen": [
+      "Wil"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "kennis bij feest Riet, aan dialyse",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_a63c6890": {
+    "id": "actor_a63c6890",
+    "naam": "Niek",
+    "aliassen": [
+      "Niek"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "kennis bij feest Riet",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_f5cac34e": {
+    "id": "actor_f5cac34e",
+    "naam": "Ad K",
+    "aliassen": [
+      "Ad K"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "kennis bij feest Riet",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_aa5a5639": {
+    "id": "actor_aa5a5639",
+    "naam": "Helma",
+    "aliassen": [
+      "Helma"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "kennis bij feest Riet",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_95d79f53": {
+    "id": "actor_95d79f53",
+    "naam": "Kitty",
+    "aliassen": [
+      "Kitty"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "dochter Ad K, woont in Zuid-Afrika",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_bfd9df9e": {
+    "id": "actor_bfd9df9e",
+    "naam": "Silvana",
+    "aliassen": [
+      "Silvana"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "dochter van jubilerende ouders (zendeling)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_8146f623": {
+    "id": "actor_8146f623",
+    "naam": "Mattanja",
+    "aliassen": [
+      "Mattanja"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "dochter van jubilerend echtpaar",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_b020a9e7": {
+    "id": "actor_b020a9e7",
+    "naam": "Mirjam",
+    "aliassen": [
+      "Mirjam"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "dochter van jubilerend echtpaar",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_711c73f6": {
+    "id": "actor_711c73f6",
+    "naam": "Chris",
+    "aliassen": [
+      "Chris"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "kennis bij jubileumfeest",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_eeccd860": {
+    "id": "actor_eeccd860",
+    "naam": "Jacqueline (bij AH)",
+    "aliassen": [],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "medewerkster Albert Heijn",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_3c208a74": {
+    "id": "actor_3c208a74",
+    "naam": "Hans Jansen",
+    "aliassen": [
+      "Hans Jansen"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "publiek",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "arabist, TV-optreden Pauw & Witteman",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_f49d3a36": {
+    "id": "actor_f49d3a36",
+    "naam": "Camille Eurlings",
+    "aliassen": [
+      "Eurlings"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "publiek",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "minister van Verkeer (NL)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_5dd35676": {
+    "id": "actor_5dd35676",
+    "naam": "Mw. Korten",
+    "aliassen": [
+      "Korten"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "winkelier Emmerich",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_5f50a84c": {
+    "id": "actor_5f50a84c",
+    "naam": "Thomas",
+    "aliassen": [
+      "Thomas"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "hotelmedewerker Herrihof",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_60c6d277": {
+    "id": "actor_60c6d277",
+    "naam": "Alex",
+    "aliassen": [
+      "Alex"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "hotelmedewerker / eigenaar Herrihof",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_fda0bcf5": {
+    "id": "actor_fda0bcf5",
+    "naam": "Herr Vrbnjak",
+    "aliassen": [
+      "Vrbnjak",
+      "Vrbniak"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "chef restaurant Am Paulusbogen Passau",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_db0c6eae": {
+    "id": "actor_db0c6eae",
+    "naam": "Frau Wotruba",
+    "aliassen": [
+      "Wotruba"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "kennis",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "receptionist Parkhotel Hietzing Wenen",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_68c46a60": {
+    "id": "actor_68c46a60",
+    "naam": "Jason",
+    "aliassen": [
+      "Jason"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "redacteur NE&D tijdschrift",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_110aa979": {
+    "id": "actor_110aa979",
+    "naam": "Van Aert",
+    "aliassen": [
+      "Van Aert"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "aspergeteler Huijbergen",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_9adff366": {
+    "id": "actor_9adff366",
+    "naam": "Van Gilst",
+    "aliassen": [
+      "Van Gilst"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "gereedschapsreparatie (kettingzaag)",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_bf490c2e": {
+    "id": "actor_bf490c2e",
+    "naam": "Van Gessel",
+    "aliassen": [
+      "Van Gessel"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "garage / tankstation",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
+  },
+  "actor_00105931": {
+    "id": "actor_00105931",
+    "naam": "slager Bles",
+    "aliassen": [
+      "Bles"
+    ],
+    "type": "persoon",
+    "relatie_tot_auteur": "zakelijk",
+    "geboorte": null,
+    "overlijden": null,
+    "rol_in_verhaal": "slager in de buurt",
+    "narratieve_arc": null,
+    "eerste_vermelding": null,
+    "laatste_vermelding": null,
+    "documenten_count": 0
   }
 }
