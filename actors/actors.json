@@ -1,0 +1,44 @@
+{
+  "actor_zelf": {
+    "id": "actor_zelf",
+    "naam": "Stijn",
+    "aliassen": ["ik", "S."],
+    "type": "persoon",
+    "relatie_tot_auteur": "zelf",
+    "geboorte": "1975",
+    "overlijden": null,
+    "rol_in_verhaal": "protagonist",
+    "narratieve_arc": "Van kind naar volwassene; zoektocht naar identiteit en thuis",
+    "eerste_vermelding": "1980-01-01",
+    "laatste_vermelding": null,
+    "documenten_count": 847
+  },
+  "actor_moeder": {
+    "id": "actor_moeder",
+    "naam": "Maria",
+    "aliassen": ["Mama", "Moeder", "Ma", "Mam"],
+    "type": "persoon",
+    "relatie_tot_auteur": "moeder",
+    "geboorte": "1948",
+    "overlijden": null,
+    "rol_in_verhaal": "anker",
+    "narratieve_arc": "Constante aanwezigheid; steunpunt in crisisperiodes",
+    "eerste_vermelding": "1975-01-01",
+    "laatste_vermelding": null,
+    "documenten_count": 312
+  },
+  "actor_vader": {
+    "id": "actor_vader",
+    "naam": "Jef",
+    "aliassen": ["Papa", "Vader", "Pa"],
+    "type": "persoon",
+    "relatie_tot_auteur": "vader",
+    "geboorte": "1944",
+    "overlijden": "1998-09-03",
+    "rol_in_verhaal": "verlies",
+    "narratieve_arc": "Aanwezig tot midden jaren '90; ziekte en overlijden vormen centraal keerpunt",
+    "eerste_vermelding": "1975-01-01",
+    "laatste_vermelding": "1998-08-20",
+    "documenten_count": 124
+  }
+}

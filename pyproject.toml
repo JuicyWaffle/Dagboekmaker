@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "dagboekmaker"
+version = "0.1.0"
+description = "Persoonlijk archief naar scriptbasis"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+dependencies = [
+    # LLM backends (kies één of beide)
+    "anthropic>=0.25",       # voor AnthropicVerrijker
+    # ollama wordt via urllib aangesproken, geen extra pakket nodig
+
+    # Extractie
+    "pdfminer.six>=20221105",
+
+    # Optioneel maar aanbevolen:
+    # "pytesseract",         # OCR voor foto's
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-cov",
+    "ruff",
+]
+
+[project.scripts]
+dagboekmaker = "dagboekmaker.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

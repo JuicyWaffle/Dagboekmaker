@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dagboekmaker — Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #fafaf8;
+    --surface:  #f1efe8;
+    --border:   rgba(100,99,92,0.18);
+    --text:     #2c2c2a;
+    --muted:    #5f5e5a;
+    --hint:     #888780;
+    --teal:     #1D9E75;
+    --amber:    #EF9F27;
+    --gray:     #B4B2A9;
+    --purple:   #534AB7;
+    --coral:    #D85A30;
+    --blue:     #185FA5;
+    --radius:   10px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:      #1e1e1c;
+      --surface: #2c2c2a;
+      --border:  rgba(200,198,188,0.12);
+      --text:    #e8e6dc;
+      --muted:   #a8a69c;
+      --hint:    #6e6d68;
+    }
+  }
+
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 2rem 1.5rem;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 0.25rem; }
+  .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 2rem; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--hint);
+    margin-bottom: 0.75rem;
+  }
+
+  /* Metric cards */
+  .metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 2.5rem; }
+  .metric {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .metric-label { font-size: 11px; color: var(--hint); margin-bottom: 4px; }
+  .metric-value { font-size: 24px; font-weight: 500; }
+  .metric-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* Chart sections */
+  .chart-section { margin-bottom: 2.5rem; }
+  .chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* Controls */
+  select, button {
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 0.5px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button:hover { background: var(--surface); }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 11px;
+    color: var(--muted);
+    align-items: center;
+  }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+  /* Callouts */
+  .callouts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 1rem;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 99px;
+  }
+  .pill-gap  { background: #faeeda; color: #633806; }
+  .pill-peak { background: #e1f5ee; color: #085041; }
+
+  @media (max-width: 600px) {
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<h1>Dagboekmaker</h1>
+<p class="subtitle" id="ts">Dashboard — laad dashboard_data.json om echte data te tonen</p>
+
+<!-- Metric cards -->
+<div class="metrics">
+  <div class="metric">
+    <div class="metric-label">Bronbestanden</div>
+    <div class="metric-value" id="m-total">—</div>
+    <div class="metric-sub">gevonden</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Verwerkt</div>
+    <div class="metric-value" id="m-done" style="color:var(--teal)">—</div>
+    <div class="metric-sub" id="m-pct">—</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Gedateerd</div>
+    <div class="metric-value" id="m-dated">—</div>
+    <div class="metric-sub">met zekerheid ≥ 0.8</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Onzeker jaar</div>
+    <div class="metric-value" id="m-unsure" style="color:var(--amber)">—</div>
+    <div class="metric-sub">review nodig</div>
+  </div>
+</div>
+
+<!-- Voortgang per type -->
+<div class="chart-section">
+  <div class="chart-header">
+    <div class="section-label">Verwerkingsvoortgang per type</div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--teal)"></span>verwerkt</span>
+      <span><span class="dot" style="background:var(--gray)"></span>resterend</span>
+    </div>
+  </div>
+  <div class="chart-wrap" style="height:180px"><canvas id="chart-progress"></canvas></div>
+</div>
+
+<!-- Tijdlijn dichtheid -->
+<div class="chart-section">
+  <div class="chart-header">
+    <div class="section-label">Brondichtheid op tijdlijn</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <select id="gran-select" onchange="updateDensity()">
+        <option value="5">per 5 jaar</option>
+        <option value="2">per 2 jaar</option>
+        <option value="1" selected>per jaar</option>
+      </select>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--teal)"></span>gedateerd</span>
+        <span><span class="dot" style="background:var(--amber)"></span>onzeker jaar</span>
+        <span><span class="dot" style="background:var(--gray)"></span>onverwerkt</span>
+      </div>
+    </div>
+  </div>
+  <div class="chart-wrap" id="density-wrap" style="height:240px">
+    <canvas id="chart-density"></canvas>
+  </div>
+  <div class="callouts" id="callouts"></div>
+</div>
+
+<script>
+// ── Demo-data (vervangen door fetch('dashboard_data.json') in productie) ──
+const DEMO = {
+  voortgang: {
+    dagboek:    { total: 312, done: 290 },
+    brieven:    { total: 487, done: 380 },
+    financieel: { total: 340, done: 210 },
+    "foto's":   { total: 520, done: 210 },
+    notities:   { total: 188, done: 113 },
+  },
+  dichtheid: {
+    1975:{zeker:0,onzeker:1,raw:2},  1976:{zeker:1,onzeker:1,raw:3},
+    1977:{zeker:2,onzeker:2,raw:4},  1978:{zeker:1,onzeker:1,raw:2},
+    1979:{zeker:0,onzeker:0,raw:1},  1980:{zeker:3,onzeker:2,raw:5},
+    1981:{zeker:4,onzeker:3,raw:6},  1982:{zeker:5,onzeker:2,raw:4},
+    1983:{zeker:6,onzeker:3,raw:5},  1984:{zeker:8,onzeker:4,raw:3},
+    1985:{zeker:12,onzeker:5,raw:6}, 1986:{zeker:14,onzeker:4,raw:5},
+    1987:{zeker:18,onzeker:6,raw:4}, 1988:{zeker:22,onzeker:5,raw:8},
+    1989:{zeker:25,onzeker:7,raw:6}, 1990:{zeker:30,onzeker:8,raw:9},
+    1991:{zeker:35,onzeker:6,raw:7}, 1992:{zeker:40,onzeker:9,raw:10},
+    1993:{zeker:45,onzeker:10,raw:8},1994:{zeker:48,onzeker:8,raw:12},
+    1995:{zeker:52,onzeker:11,raw:9},1996:{zeker:46,onzeker:12,raw:11},
+    1997:{zeker:38,onzeker:15,raw:14},1998:{zeker:12,onzeker:18,raw:20},
+    1999:{zeker:8,onzeker:20,raw:25},2000:{zeker:6,onzeker:16,raw:18},
+    2001:{zeker:10,onzeker:12,raw:15},2002:{zeker:20,onzeker:10,raw:12},
+    2003:{zeker:28,onzeker:8,raw:10},2004:{zeker:35,onzeker:7,raw:8},
+    2005:{zeker:42,onzeker:8,raw:7}, 2006:{zeker:50,onzeker:6,raw:6},
+    2007:{zeker:55,onzeker:5,raw:5}, 2008:{zeker:48,onzeker:7,raw:6},
+    2009:{zeker:44,onzeker:6,raw:5}, 2010:{zeker:40,onzeker:5,raw:4},
+    2011:{zeker:36,onzeker:4,raw:3}, 2012:{zeker:30,onzeker:4,raw:4},
+    2013:{zeker:25,onzeker:5,raw:3}, 2014:{zeker:22,onzeker:3,raw:3},
+    2015:{zeker:18,onzeker:2,raw:2}, 2016:{zeker:15,onzeker:2,raw:2},
+    2017:{zeker:12,onzeker:1,raw:1}, 2018:{zeker:8,onzeker:1,raw:1},
+    2019:{zeker:5,onzeker:1,raw:1},  2020:{zeker:4,onzeker:0,raw:1},
+  }
+};
+
+let DATA = DEMO;
+
+// Probeer echte data te laden
+fetch('dashboard_data.json')
+  .then(r => r.json())
+  .then(d => { DATA = d; renderAlles(); })
+  .catch(() => renderAlles());
+
+function renderAlles() {
+  vulMetrieken();
+  renderVoortgang();
+  updateDensity();
+}
+
+function vulMetrieken() {
+  const vg = DATA.voortgang || {};
+  const types = Object.values(vg);
+  const totaal = types.reduce((s,t) => s + (t.total||t), 0);
+  const done   = types.reduce((s,t) => s + (t.done||t), 0);
+  const dicht  = DATA.dichtheid || {};
+  let zeker = 0, onzeker = 0;
+  Object.values(dicht).forEach(v => { zeker += v.zeker||0; onzeker += v.onzeker||0; });
+
+  document.getElementById('m-total').textContent = totaal.toLocaleString('nl');
+  document.getElementById('m-done').textContent  = done.toLocaleString('nl');
+  document.getElementById('m-pct').textContent   = totaal > 0 ? Math.round(done/totaal*100)+'% klaar' : '';
+  document.getElementById('m-dated').textContent = zeker.toLocaleString('nl');
+  document.getElementById('m-unsure').textContent= onzeker.toLocaleString('nl');
+
+  if (DATA.gegenereerd_op) {
+    const d = new Date(DATA.gegenereerd_op);
+    document.getElementById('ts').textContent =
+      'Dashboard — bijgewerkt ' + d.toLocaleDateString('nl-BE', {dateStyle:'medium'});
+  }
+}
+
+let progressChart = null;
+function renderVoortgang() {
+  const vg = DATA.voortgang || {};
+  const kleuren = {
+    dagboek:    '#534AB7',
+    brieven:    '#1D9E75',
+    financieel: '#BA7517',
+    "foto's":   '#D85A30',
+    notities:   '#888780',
+  };
+  const labels = Object.keys(vg);
+  const done    = labels.map(k => vg[k].done ?? vg[k]);
+  const rest    = labels.map(k => Math.max(0, (vg[k].total ?? vg[k]) - (vg[k].done ?? vg[k])));
+  const colors  = labels.map(k => kleuren[k] || '#888780');
+
+  if (progressChart) progressChart.destroy();
+  progressChart = new Chart(document.getElementById('chart-progress'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Verwerkt',  data: done, backgroundColor: colors,     borderRadius: 4, stack: 's', barPercentage: 0.55 },
+        { label: 'Resterend', data: rest, backgroundColor: '#D3D1C7', borderRadius: 4, stack: 's', barPercentage: 0.55 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      scales: {
+        x: { stacked: true, grid: { color: 'rgba(136,135,128,0.1)' }, ticks: { font:{size:11}, color:'#888780' } },
+        y: { stacked: true, grid: { display: false }, ticks: { font:{size:12}, color:'#5F5E5A' } },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => {
+          const lbl = ctx.dataset.label;
+          const k   = labels[ctx.dataIndex];
+          const tot = vg[k].total ?? vg[k];
+          const dn  = vg[k].done  ?? vg[k];
+          const pct = tot > 0 ? Math.round(dn/tot*100) : 0;
+          return lbl === 'Verwerkt' ? ` ${dn} verwerkt (${pct}%)` : ` ${tot-dn} resterend`;
+        }}}
+      }
+    }
+  });
+}
+
+let densityChart = null;
+function buildBuckets(gran) {
+  const dicht = DATA.dichtheid || {};
+  const jaren = Object.keys(dicht).map(Number).sort((a,b)=>a-b);
+  if (!jaren.length) return [];
+  const min = jaren[0], max = jaren[jaren.length-1];
+  const buckets = [];
+  for (let y = min; y <= max; y += gran) {
+    let z=0,o=0,r=0;
+    for (let i=0;i<gran;i++) { const v=dicht[y+i]; if(v){z+=v.zeker||0;o+=v.onzeker||0;r+=v.raw||0;} }
+    buckets.push({ label: gran===1 ? String(y) : `${y}–${y+gran-1}`, z, o, r });
+  }
+  return buckets;
+}
+
+function detectCallouts(gran) {
+  const buckets = buildBuckets(gran);
+  const gaps=[], peaks=[];
+  const vals = buckets.map(b=>b.z+b.o);
+  const avg  = vals.reduce((s,v)=>s+v,0)/(vals.length||1);
+  buckets.forEach(b => {
+    const tot = b.z+b.o;
+    if (tot < avg*0.3 && (b.z+b.o+b.r) > 0) gaps.push(b.label);
+    if (tot > avg*2)   peaks.push(b.label);
+  });
+  return { gaps, peaks };
+}
+
+function updateDensity() {
+  const gran = parseInt(document.getElementById('gran-select').value);
+  const buckets = buildBuckets(gran);
+  if (!buckets.length) return;
+
+  if (densityChart) densityChart.destroy();
+  densityChart = new Chart(document.getElementById('chart-density'), {
+    type: 'bar',
+    data: {
+      labels: buckets.map(b=>b.label),
+      datasets: [
+        { label:'Gedateerd',   data:buckets.map(b=>b.z), backgroundColor:'#1D9E75', borderRadius:3, stack:'s' },
+        { label:'Onzeker jaar',data:buckets.map(b=>b.o), backgroundColor:'#EF9F27', borderRadius:3, stack:'s' },
+        { label:'Onverwerkt',  data:buckets.map(b=>b.r), backgroundColor:'#B4B2A9', borderRadius:3, stack:'s' },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { stacked:true, grid:{display:false}, ticks:{font:{size:10},color:'#888780',autoSkip:gran===1,maxRotation:45,maxTicksLimit:gran===1?20:30} },
+        y: { stacked:true, grid:{color:'rgba(136,135,128,0.1)'}, ticks:{font:{size:11},color:'#888780'} },
+      },
+      plugins: {
+        legend: { display:false },
+        tooltip: { callbacks: { title:ctx=>`Periode: ${ctx[0].label}`, label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y}` } }
+      }
+    }
+  });
+
+  const { gaps, peaks } = detectCallouts(gran);
+  const el = document.getElementById('callouts');
+  el.innerHTML = '';
+  gaps.forEach(g  => el.innerHTML += `<span class="pill pill-gap">${g} — weinig gedateerde docs</span>`);
+  peaks.forEach(p => el.innerHTML += `<span class="pill pill-peak">${p} — piekperiode</span>`);
+}
+</script>
+</body>
+</html>

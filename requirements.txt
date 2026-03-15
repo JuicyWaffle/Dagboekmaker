@@ -1,0 +1,17 @@
+# Dagboekmaker — vereiste Python-pakketten
+# Installeer met: pip install -r requirements.txt
+
+# LLM-backend (kies wat van toepassing is)
+anthropic>=0.25          # Anthropic API (Claude)
+# ollama wordt via urllib aangesproken — geen pakket nodig
+
+# PDF-extractie
+pdfminer.six>=20221105
+
+# Optioneel: OCR voor gescande documenten
+# pytesseract>=0.3.10
+# Pillow>=10.0
+
+# Dev/test
+pytest>=8
+ruff>=0.4
