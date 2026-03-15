@@ -24,7 +24,7 @@ from typing import Optional
 
 from .corpus import Corpus
 from .datering import dateer_lokaal, GlobaleDateringsmotor
-from .extractor import extraheer, EXTENSIONS
+from .extractor import extraheer, EXTENSIONS, _sniff
 from .verrijking import maak_verrijker
 
 log = logging.getLogger(__name__)
@@ -40,28 +40,65 @@ class Pipeline:
         self,
         bronmap: str,
         corpusmap: str,
-        backend: str = "anthropic",
+        backend: str = "ollama",
         verrijker_kwargs: Optional[dict] = None,
         herverwerk: bool = False,
+        tweede_pass: bool = True,
     ):
         self.bronmap = Path(bronmap)
         self.corpus = Corpus(corpusmap)
         self.verrijker = maak_verrijker(backend, **(verrijker_kwargs or {}))
         self.herverwerk = herverwerk
+        self.tweede_pass = tweede_pass
+        # Tweede pass altijd met Claude
+        if tweede_pass and backend != "anthropic":
+            self._verrijker_claude = maak_verrijker("anthropic")
+        else:
+            self._verrijker_claude = None
 
     # ── Publieke API ─────────────────────────────────────────────────────────
 
-    def verwerk_alles(self, glob: str = "**/*"):
-        """Verwerkt alle bronbestanden recursief."""
+    def verwerk_alles(self, glob: str = "**/*",
+                      voortgang_callback=None,
+                      stop_event=None,
+                      pause_event=None):
+        """Verwerkt alle bronbestanden recursief.
+
+        voortgang_callback: optional callable receiving progress dict
+        stop_event: threading.Event — if set, stops after current file
+        pause_event: threading.Event — if cleared, blocks until set again
+        """
         bestanden = [
             p for p in self.bronmap.glob(glob)
-            if p.is_file() and p.suffix.lower() in EXTENSIONS
+            if p.is_file()
+            and (p.suffix.lower() in EXTENSIONS
+                 or _sniff(p) is not None)
         ]
-        log.info("Gevonden: %d bronbestanden", len(bestanden))
+        totaal = len(bestanden)
+        log.info("Gevonden: %d bronbestanden", totaal)
         verwerkt = 0
         fouten = 0
 
-        for pad in bestanden:
+        for i, pad in enumerate(bestanden):
+            # Cooperative stop
+            if stop_event and stop_event.is_set():
+                log.info("Stop gevraagd, afgebroken na %d bestanden", verwerkt)
+                break
+
+            # Cooperative pause
+            if pause_event and not pause_event.is_set():
+                if voortgang_callback:
+                    voortgang_callback({"fase": "gepauzeerd", "nummer": i, "totaal": totaal})
+                pause_event.wait()
+
+            if voortgang_callback:
+                voortgang_callback({
+                    "bestand": str(pad.name),
+                    "fase": "verwerking",
+                    "nummer": i + 1,
+                    "totaal": totaal,
+                })
+
             try:
                 doc_id = self.verwerk_bestand(str(pad))
                 if doc_id:
@@ -69,6 +106,32 @@ class Pipeline:
             except Exception as e:
                 log.error("Fout bij %s: %s", pad, e)
                 fouten += 1
+                if voortgang_callback:
+                    voortgang_callback({
+                        "bestand": str(pad.name),
+                        "fase": "fout",
+                        "fout": str(e),
+                        "nummer": i + 1,
+                        "totaal": totaal,
+                    })
+
+        # ── Tweede pass: Claude-verfijning ──
+        if self._verrijker_claude and verwerkt > 0:
+            if stop_event and stop_event.is_set():
+                log.info("Stop gevraagd, tweede pass overgeslagen")
+            else:
+                log.info("Tweede pass: Claude-verfijning van %d documenten...", verwerkt)
+                if voortgang_callback:
+                    voortgang_callback({"fase": "claude_pass", "nummer": 0, "totaal": verwerkt})
+                self._tweede_pass_claude(
+                    voortgang_callback=voortgang_callback,
+                    stop_event=stop_event,
+                    pause_event=pause_event,
+                    totaal=verwerkt,
+                )
+
+        if voortgang_callback:
+            voortgang_callback({"fase": "fase2", "nummer": verwerkt, "totaal": totaal})
 
         log.info("Klaar: %d verwerkt, %d fouten", verwerkt, fouten)
         self._fase2_globaal()
@@ -137,6 +200,7 @@ class Pipeline:
                 "themas": verrijking.themas,
                 "emotionele_toon": verrijking.emotionele_toon,
                 "type": verrijking.type,
+                "18plus": verrijking.achttienplusinhoud,
             },
             "actors": actors,
             "narratief": {
@@ -158,6 +222,76 @@ class Pipeline:
         log.info("Verwerkt: %s → %s (%s)", Path(pad).name, doc_id,
                  datum.datum_geschat or "?")
         return doc_id
+
+    # ── Tweede pass: Claude-verfijning ───────────────────────────────────────
+
+    def _tweede_pass_claude(self, voortgang_callback=None, stop_event=None,
+                            pause_event=None, totaal=0):
+        """Herverrijkt alle documenten via Claude voor diepere analyse."""
+        alle_docs = self.corpus.zoek()
+        for i, doc in enumerate(alle_docs):
+            if not doc:
+                continue
+
+            if stop_event and stop_event.is_set():
+                log.info("Stop gevraagd, Claude-pass afgebroken na %d docs", i)
+                break
+
+            if pause_event and not pause_event.is_set():
+                if voortgang_callback:
+                    voortgang_callback({"fase": "gepauzeerd (claude)", "nummer": i, "totaal": totaal})
+                pause_event.wait()
+
+            if voortgang_callback:
+                voortgang_callback({
+                    "bestand": doc.get("bestand_origineel", doc["id"]),
+                    "fase": "claude_pass",
+                    "nummer": i + 1,
+                    "totaal": totaal,
+                })
+
+            tekst = doc.get("inhoud", {}).get("plaintext", "")
+            if not tekst:
+                continue
+
+            try:
+                verrijking = self._verrijker_claude.verrijk(tekst)
+                if verrijking.fout:
+                    log.warning("Claude-pass fout voor %s: %s", doc["id"], verrijking.fout)
+                    continue
+
+                # Merge: Claude overschrijft, maar behoud wat Ollama al goed had
+                inhoud = doc.get("inhoud", {})
+                inhoud["samenvatting"] = verrijking.samenvatting or inhoud.get("samenvatting", "")
+                inhoud["type"] = verrijking.type or inhoud.get("type", "onbekend")
+                inhoud["themas"] = verrijking.themas or inhoud.get("themas", [])
+                inhoud["emotionele_toon"] = verrijking.emotionele_toon or inhoud.get("emotionele_toon")
+                doc["inhoud"] = inhoud
+                doc["type"] = verrijking.type or doc.get("type", "onbekend")
+
+                # Merge actoren (voeg nieuwe toe, behoud bestaande)
+                bestaande_namen = {a.get("_naam_origineel", "").lower() for a in doc.get("actors", [])}
+                for a in _normaliseer_actoren(verrijking.actoren):
+                    if a.get("_naam_origineel", "").lower() not in bestaande_namen:
+                        doc.setdefault("actors", []).append(a)
+
+                # Narratief verfijnen
+                if verrijking.narratief:
+                    doc["narratief"] = {**doc.get("narratief", {}), **verrijking.narratief}
+
+                # Datering hints toevoegen
+                if verrijking.datering_hints:
+                    meta = doc.get("verwerkings_meta", {})
+                    meta["claude_pass"] = datetime.now(tz=timezone.utc).isoformat()
+                    doc["verwerkings_meta"] = meta
+
+                self.corpus.sla_document_op(doc)
+                log.debug("Claude-pass: %s verfijnd", doc["id"])
+
+            except Exception as e:
+                log.warning("Claude-pass fout %s: %s", doc["id"], e)
+
+        log.info("Claude-pass klaar.")
 
     # ── Fase 2: globale constraints ──────────────────────────────────────────
 
@@ -227,15 +361,28 @@ class Pipeline:
 # ── Hulpfuncties ──────────────────────────────────────────────────────────────
 
 def _normaliseer_actoren(actoren: list) -> list:
-    """Maak actor-refs van LLM-output (namen → IDs)."""
-    result = []
+    """Maak actor-refs van LLM-output (namen → IDs). Ondersteunt meervoudige rollen."""
+    # Groepeer per naam zodat dezelfde actor meerdere rollen kan krijgen
+    per_naam = {}
     for a in actoren:
         naam = a.get("naam", "").strip()
         if not naam:
             continue
-        actor_id = "actor_" + hashlib.sha1(naam.lower().encode()).hexdigest()[:8]
-        result.append({"ref": actor_id, "rol": a.get("rol", "vermeld"),
-                        "_naam_origineel": naam})
+        sleutel = naam.lower()
+        rol = a.get("rol", "vermeld")
+        if sleutel not in per_naam:
+            per_naam[sleutel] = {"naam": naam, "rollen": set()}
+        per_naam[sleutel]["rollen"].add(rol)
+
+    result = []
+    for sleutel, info in per_naam.items():
+        actor_id = "actor_" + hashlib.sha1(sleutel.encode()).hexdigest()[:8]
+        rollen = sorted(info["rollen"])
+        result.append({
+            "ref": actor_id,
+            "rol": rollen[0] if len(rollen) == 1 else rollen,
+            "_naam_origineel": info["naam"],
+        })
     return result
 
 

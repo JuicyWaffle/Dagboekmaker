@@ -18,6 +18,77 @@ from typing import Optional
 
 log = logging.getLogger(__name__)
 
+
+# ── Magic-byte detectie voor bestanden zonder bekende extensie ────────────────
+
+_DOC_SIGNATURES = [
+    (b"%PDF",               "pdfminer"),
+    (b"{\\rtf",             "libreoffice"),
+    (b"\xd0\xcf\x11\xe0",  "libreoffice"),   # OLE2: doc/xls/ppt/msg
+    (b"PK\x03\x04",        "_zip"),           # ZIP-container, nader bepalen
+]
+
+
+def _sniff(p: Path) -> Optional[str]:
+    """Detecteert bestandstype via magic bytes.  Geeft methode-string of None."""
+    try:
+        hoofd = p.read_bytes()[:16]
+    except Exception:
+        return None
+    if len(hoofd) < 4:
+        return None
+
+    # ── Bekende documentformaten ──
+    for sig, methode in _DOC_SIGNATURES:
+        if hoofd.startswith(sig):
+            if methode == "_zip":
+                return _sniff_zip(p)
+            return methode
+
+    # ── HTML / XML ──
+    stripped = hoofd.lstrip()[:5].lower()
+    if stripped.startswith((b"<html", b"<!doc", b"<?xml")):
+        return "html"
+
+    # ── E-mail headers ──
+    if hoofd.startswith((b"From ", b"From:", b"MIME-", b"Retur")):
+        return "email"
+
+    # ── Fallback: lijkt het op leesbare tekst? ──
+    try:
+        sample = p.read_bytes()[:4096]
+        if not sample:
+            return None
+        printbaar = sum(1 for b in sample if 32 <= b <= 126 or b in (9, 10, 13))
+        if printbaar / len(sample) > 0.85:
+            return "plaintext"
+    except Exception:
+        pass
+
+    return None
+
+
+def _sniff_zip(p: Path) -> Optional[str]:
+    """Bepaal het type ZIP-container (docx/odt/epub/…)."""
+    try:
+        import zipfile
+        with zipfile.ZipFile(str(p)) as z:
+            namen = set(z.namelist())
+            if "META-INF/container.xml" in namen:
+                return "epub"
+            if any(n.startswith("word/") for n in namen):
+                return "libreoffice"
+            if any(n.startswith("xl/") for n in namen):
+                return "libreoffice"
+            if any(n.startswith("ppt/") for n in namen):
+                return "libreoffice"
+            if "content.xml" in namen:          # ODF (odt/ods/odp)
+                return "libreoffice"
+            return "libreoffice"                # onbekend ZIP → probeer LO
+    except Exception:
+        return None
+
+
 EXTENSIONS = {
     # ── Platte tekst ──────────────────────────────────────────────────────
     ".txt":  "plaintext",
@@ -149,6 +220,11 @@ def extraheer(pad: str) -> ExtractieResultaat:
     p = Path(pad)
     ext = p.suffix.lower()
     methode = EXTENSIONS.get(ext, "onbekend")
+
+    # Onbekende of ontbrekende extensie? Sniff magic bytes.
+    if methode == "onbekend":
+        methode = _sniff(p) or "onbekend"
+
     bestandsdatum = _bestandsdatum(p)
 
     try:
