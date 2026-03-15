@@ -25,6 +25,7 @@ from typing import Optional
 from .corpus import Corpus
 from .datering import dateer_lokaal, GlobaleDateringsmotor
 from .extractor import extraheer, EXTENSIONS, _sniff
+from .splitter import splits_dagboek
 from .verrijking import maak_verrijker
 
 log = logging.getLogger(__name__)
@@ -33,6 +34,49 @@ log = logging.getLogger(__name__)
 def _maak_doc_id(pad: str) -> str:
     """Stabiel, deterministisch ID op basis van bestandspad."""
     return "doc_" + hashlib.sha1(pad.encode()).hexdigest()[:12]
+
+
+def _maak_fragment_id(pad: str, volgnummer: int) -> str:
+    """Deterministisch ID voor een fragment uit een bronbestand.
+
+    Gebruikt als fallback wanneer nog geen datum/type bekend is.
+    Gebruik _maak_leesbaar_fragment_id() voor de definitieve ID na verrijking.
+    """
+    basis = f"{pad}::frag_{volgnummer}"
+    return "doc_" + hashlib.sha1(basis.encode()).hexdigest()[:12]
+
+
+def _maak_leesbaar_fragment_id(datum_geschat: Optional[str],
+                                doc_type: str = "dagboek",
+                                pad: str = "",
+                                volgnummer: int = 0) -> str:
+    """Leesbaar ID op basis van datum en type, bv. doc_19950314_dagboek.
+
+    Bij dubbele datums wordt een suffix (_2, _3, ...) toegevoegd op basis
+    van het volgnummer in het bronbestand.
+    """
+    import re
+    # Extraheer YYYYMMDD uit datum_geschat
+    datum_deel = "00000000"
+    if datum_geschat:
+        # Probeer ISO-formaat: "1995-03-14", "1995-03", "1995"
+        cijfers = re.findall(r"\d+", datum_geschat)
+        if cijfers:
+            jaar = cijfers[0].zfill(4)
+            maand = cijfers[1].zfill(2) if len(cijfers) > 1 else "00"
+            dag = cijfers[2].zfill(2) if len(cijfers) > 2 else "00"
+            datum_deel = f"{jaar}{maand}{dag}"
+
+    # Maak type URL-veilig
+    type_deel = re.sub(r"[^a-z0-9]", "_", doc_type.lower().strip())[:20]
+
+    basis_id = f"doc_{datum_deel}_{type_deel}"
+
+    # Voeg volgnummer toe als disambiguatie (altijd, voor determinisme)
+    if volgnummer > 0:
+        basis_id += f"_{volgnummer}"
+
+    return basis_id
 
 
 class Pipeline:
@@ -44,12 +88,14 @@ class Pipeline:
         verrijker_kwargs: Optional[dict] = None,
         herverwerk: bool = False,
         tweede_pass: bool = True,
+        split_dagboeken: bool = True,
     ):
         self.bronmap = Path(bronmap)
         self.corpus = Corpus(corpusmap)
         self.verrijker = maak_verrijker(backend, **(verrijker_kwargs or {}))
         self.herverwerk = herverwerk
         self.tweede_pass = tweede_pass
+        self.split_dagboeken = split_dagboeken
         # Tweede pass altijd met Claude
         if tweede_pass and backend != "anthropic":
             self._verrijker_claude = maak_verrijker("anthropic")
@@ -100,9 +146,9 @@ class Pipeline:
                 })
 
             try:
-                doc_id = self.verwerk_bestand(str(pad))
-                if doc_id:
-                    verwerkt += 1
+                doc_ids = self.verwerk_bestand(str(pad))
+                if doc_ids:
+                    verwerkt += len(doc_ids)
             except Exception as e:
                 log.error("Fout bij %s: %s", pad, e)
                 fouten += 1
@@ -138,15 +184,15 @@ class Pipeline:
         self.corpus.exporteer_actors_json()
         self._exporteer_dashboard_data()
 
-    def verwerk_bestand(self, pad: str) -> Optional[str]:
-        """Verwerkt één bestand. Geeft doc_id terug of None als overgeslagen."""
+    def verwerk_bestand(self, pad: str) -> Optional[list[str]]:
+        """Verwerkt één bestand. Geeft lijst van doc_ids terug of None als overgeslagen."""
         doc_id = _maak_doc_id(pad)
 
         if not self.herverwerk:
             bestaand = self.corpus.haal_document_op(doc_id)
             if bestaand:
                 log.debug("Overgeslagen (al verwerkt): %s", pad)
-                return doc_id
+                return [doc_id]
 
         # Stap 1: extractie
         extractie = extraheer(pad)
@@ -156,36 +202,29 @@ class Pipeline:
 
         tekst = extractie.tekst or ""
 
-        # Stap 2: datering fase 1
+        # Stap 2: splits op datumkoppen (als ingeschakeld)
+        if self.split_dagboeken:
+            split = splits_dagboek(tekst)
+        else:
+            split = None
+
+        if split and split.is_gesplitst:
+            return self._verwerk_fragmenten(pad, extractie, split)
+
+        # Geen splitsing: bestaande logica voor enkelvoudig document
+        return self._verwerk_enkel(pad, doc_id, extractie, tekst)
+
+    def _verwerk_enkel(self, pad: str, doc_id: str, extractie, tekst: str) -> list[str]:
+        """Verwerkt een enkel (niet-gesplitst) document."""
         datum = dateer_lokaal(
             tekst,
             bestandsdatum=extractie.bestandsdatum,
             exif=extractie.exif or {},
         )
-
-        # Stap 3: verrijking via LLM
         verrijking = self.verrijker.verrijk(tekst)
+        self._integreer_datering_hints(datum, verrijking)
 
-        # Integreer datering_hints uit LLM in redenering
-        if verrijking.datering_hints:
-            hints = verrijking.datering_hints
-            for citaat in hints.get("expliciete_vermeldingen", []):
-                datum.redenering.append({
-                    "type": "llm_hint_expliciet",
-                    "bewijs": citaat,
-                    "gewicht": 0.6,
-                })
-            for cultuur in hints.get("cultuurverwijzingen", []):
-                datum.redenering.append({
-                    "type": "llm_hint_cultuur",
-                    "bewijs": cultuur,
-                    "gewicht": 0.4,
-                })
-
-        # Stap 4: stel levensperiode in
         levensperiode = self._bepaal_levensperiode(datum.datum_geschat)
-
-        # Stap 5: bouw document-dict
         actors = _normaliseer_actoren(verrijking.actoren)
         doc = {
             "id": doc_id,
@@ -194,7 +233,7 @@ class Pipeline:
             "formaat_origineel": extractie.formaat,
             "bestand_origineel": pad,
             "inhoud": {
-                "plaintext": tekst[:50_000],  # max 50k tekens opslaan
+                "plaintext": tekst[:50_000],
                 "samenvatting": verrijking.samenvatting,
                 "taal": verrijking.taal,
                 "themas": verrijking.themas,
@@ -211,17 +250,139 @@ class Pipeline:
             "financieel": None,
             "verwerkings_meta": {
                 "verwerkt_op": datetime.now(tz=timezone.utc).isoformat(),
-                "tool": "dagboekmaker v0.1",
+                "tool": "dagboekmaker v0.2",
                 "extractor_methode": extractie.methode,
                 "extractie_fout": extractie.fout,
                 "bestandsdatum": extractie.bestandsdatum,
             },
         }
-
         self.corpus.sla_document_op(doc)
         log.info("Verwerkt: %s → %s (%s)", Path(pad).name, doc_id,
                  datum.datum_geschat or "?")
-        return doc_id
+        return [doc_id]
+
+    def _verwerk_fragmenten(self, pad: str, extractie, split) -> list[str]:
+        """Verwerkt een gesplitst bronbestand: elk fragment apart.
+
+        Twee-pass aanpak:
+          1. Dateer + verrijk elk fragment (nodig om leesbare IDs te maken)
+          2. Genereer leesbare IDs, bouw docs met serie-links, sla op
+        """
+        bron_id = _maak_doc_id(pad)
+        fragmenten = split.fragmenten
+        totaal = len(fragmenten)
+
+        # Verwijder eventueel bestaand enkelvoudig document (herverwerk-scenario)
+        if self.herverwerk:
+            bestaand = self.corpus.haal_document_op(bron_id)
+            if bestaand and not bestaand.get("serie"):
+                self.corpus.verwijder_document(bron_id)
+            # Verwijder ook bestaande fragmenten bij herverwerking
+            bestaande_serie = self.corpus.haal_serie_op(bron_id)
+            for oud_doc in bestaande_serie:
+                if oud_doc:
+                    self.corpus.verwijder_document(oud_doc["id"])
+
+        # Pass 1: dateer + verrijk elk fragment
+        verwerkte = []  # lijst van (frag, datum, verrijking)
+        vorig_tekst = None
+        for frag in fragmenten:
+            datum = dateer_lokaal(
+                frag.tekst,
+                bestandsdatum=extractie.bestandsdatum,
+                exif=extractie.exif or {},
+            )
+            verrijking = self.verrijker.verrijk(frag.tekst, context=vorig_tekst)
+            self._integreer_datering_hints(datum, verrijking)
+            verwerkte.append((frag, datum, verrijking))
+            vorig_tekst = frag.tekst[-500:]
+
+        # Pass 2: genereer leesbare IDs en bouw docs
+        frag_ids = []
+        for frag, datum, verrijking in verwerkte:
+            frag_id = _maak_leesbaar_fragment_id(
+                datum_geschat=datum.datum_geschat,
+                doc_type=verrijking.type,
+                pad=pad,
+                volgnummer=frag.volgnummer,
+            )
+            frag_ids.append(frag_id)
+
+        doc_ids = []
+        for i, (frag, datum, verrijking) in enumerate(verwerkte):
+            frag_id = frag_ids[i]
+            levensperiode = self._bepaal_levensperiode(datum.datum_geschat)
+            actors = _normaliseer_actoren(verrijking.actoren)
+
+            doc = {
+                "id": frag_id,
+                "tijdstip": datum.als_dict(),
+                "type": verrijking.type,
+                "formaat_origineel": extractie.formaat,
+                "bestand_origineel": pad,
+                "serie": {
+                    "bron_id": bron_id,
+                    "bron_bestand": pad,
+                    "volgnummer": frag.volgnummer,
+                    "totaal": totaal,
+                    "vorige_id": frag_ids[i - 1] if i > 0 else None,
+                    "volgende_id": frag_ids[i + 1] if i + 1 < totaal else None,
+                    "datum_header_ruw": frag.datum_header,
+                    "is_proloog": frag.datum_header is None,
+                },
+                "inhoud": {
+                    "plaintext": frag.tekst[:50_000],
+                    "samenvatting": verrijking.samenvatting,
+                    "taal": verrijking.taal,
+                    "themas": verrijking.themas,
+                    "emotionele_toon": verrijking.emotionele_toon,
+                    "type": verrijking.type,
+                    "18plus": verrijking.achttienplusinhoud,
+                },
+                "actors": actors,
+                "narratief": {
+                    **verrijking.narratief,
+                    "levensperiode": levensperiode,
+                },
+                "levensperiode": levensperiode,
+                "financieel": None,
+                "verwerkings_meta": {
+                    "verwerkt_op": datetime.now(tz=timezone.utc).isoformat(),
+                    "tool": "dagboekmaker v0.2",
+                    "extractor_methode": extractie.methode,
+                    "extractie_fout": extractie.fout,
+                    "bestandsdatum": extractie.bestandsdatum,
+                    "split_methode": split.methode,
+                    "fragment_van_totaal": f"{frag.volgnummer + 1}/{totaal}",
+                },
+            }
+
+            self.corpus.sla_document_op(doc)
+            log.info("Verwerkt: %s frag %d/%d → %s (%s)",
+                     Path(pad).name, frag.volgnummer + 1, totaal,
+                     frag_id, datum.datum_geschat or "?")
+            doc_ids.append(frag_id)
+
+        return doc_ids
+
+    @staticmethod
+    def _integreer_datering_hints(datum, verrijking):
+        """Verwerkt LLM datering_hints in de dateringsredenering."""
+        if not verrijking.datering_hints:
+            return
+        hints = verrijking.datering_hints
+        for citaat in hints.get("expliciete_vermeldingen", []):
+            datum.redenering.append({
+                "type": "llm_hint_expliciet",
+                "bewijs": citaat,
+                "gewicht": 0.6,
+            })
+        for cultuur in hints.get("cultuurverwijzingen", []):
+            datum.redenering.append({
+                "type": "llm_hint_cultuur",
+                "bewijs": cultuur,
+                "gewicht": 0.4,
+            })
 
     # ── Tweede pass: Claude-verfijning ───────────────────────────────────────
 

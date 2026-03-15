@@ -31,6 +31,7 @@ def cmd_verwerk(args):
         backend=args.backend,
         verrijker_kwargs={"model": args.model} if args.model else {},
         herverwerk=args.herverwerk,
+        split_dagboeken=not args.geen_split,
     )
     p.verwerk_alles(glob=args.glob)
 
@@ -153,6 +154,8 @@ def main():
     p_verwerk.add_argument("--model",     default=None)
     p_verwerk.add_argument("--glob",      default="**/*")
     p_verwerk.add_argument("--herverwerk",action="store_true")
+    p_verwerk.add_argument("--geen-split",action="store_true",
+                           help="Splits dagboekteksten niet op datumkoppen")
     p_verwerk.set_defaults(func=cmd_verwerk)
 
     # stats

@@ -102,6 +102,7 @@ class Corpus:
             self._db = sqlite3.connect(str(self.db_pad))
             self._db.row_factory = sqlite3.Row
             self._db.executescript(SCHEMA)
+            self._migreer_schema()
             self._initialiseer_periodes()
             self._db.commit()
         return self._db
@@ -142,6 +143,27 @@ class Corpus:
         if pad.exists():
             return json.loads(pad.read_text(encoding="utf-8"))
         return None
+
+    def verwijder_document(self, doc_id: str):
+        """Verwijdert een document uit JSON en database."""
+        rij = self.db.execute(
+            "SELECT pad_json FROM documenten WHERE id = ?", (doc_id,)
+        ).fetchone()
+        if rij and rij["pad_json"]:
+            pad = Path(rij["pad_json"])
+            if pad.exists():
+                pad.unlink()
+        self.db.execute("DELETE FROM doc_actors WHERE doc_id = ?", (doc_id,))
+        self.db.execute("DELETE FROM documenten WHERE id = ?", (doc_id,))
+        self.db.commit()
+
+    def haal_serie_op(self, bron_id: str) -> list[dict]:
+        """Haalt alle fragmenten van een bronbestand op, gesorteerd op volgnummer."""
+        rijen = self.db.execute(
+            "SELECT id FROM documenten WHERE serie_bron_id = ? ORDER BY serie_volgnummer",
+            (bron_id,)
+        ).fetchall()
+        return [self.haal_document_op(r["id"]) for r in rijen]
 
     def zoek(self, type: str = None, levensperiode: str = None,
              actor_id: str = None, zekerheid_min: float = 0.0,
@@ -230,12 +252,15 @@ class Corpus:
     def _upsert_document(self, doc: dict):
         t = doc.get("tijdstip", {})
         n = doc.get("narratief", {})
+        s = doc.get("serie", {})
         self.db.execute("""
             INSERT OR REPLACE INTO documenten
             (id, pad_origineel, formaat, datum_geschat, datum_vroegst, datum_laatst,
              precisie, zekerheid, type, taal, samenvatting, themas, emotionele_toon,
-             spanning, keerpunt, levensperiode, pad_json, verwerkt_op)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             spanning, keerpunt, levensperiode, pad_json, verwerkt_op,
+             serie_bron_id, serie_volgnummer, serie_totaal,
+             serie_vorige_id, serie_volgende_id)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             doc["id"],
             doc.get("bestand_origineel"),
@@ -255,20 +280,47 @@ class Corpus:
             doc.get("levensperiode"),
             doc.get("pad_json"),
             datetime.utcnow().isoformat(),
+            s.get("bron_id"),
+            s.get("volgnummer"),
+            s.get("totaal"),
+            s.get("vorige_id"),
+            s.get("volgende_id"),
         ))
 
     def _upsert_actors(self, doc: dict):
         for actor_ref in doc.get("actors", []):
             ref = actor_ref.get("ref")
             rol = actor_ref.get("rol", "vermeld")
-            if ref:
+            if not ref:
+                continue
+            # rol kan een lijst zijn (meerdere rollen per actor)
+            rollen = rol if isinstance(rol, list) else [rol]
+            for r in rollen:
                 try:
                     self.db.execute(
                         "INSERT OR IGNORE INTO doc_actors (doc_id, actor_id, rol) VALUES (?,?,?)",
-                        (doc["id"], ref, rol)
+                        (doc["id"], ref, r)
                     )
                 except sqlite3.IntegrityError:
                     pass
+
+    def _migreer_schema(self):
+        """Voegt serie-kolommen toe als ze nog niet bestaan (v0.2 migratie)."""
+        bestaande = {r[1] for r in self.db.execute("PRAGMA table_info(documenten)").fetchall()}
+        nieuw = {
+            "serie_bron_id": "TEXT",
+            "serie_volgnummer": "INTEGER",
+            "serie_totaal": "INTEGER",
+            "serie_vorige_id": "TEXT",
+            "serie_volgende_id": "TEXT",
+        }
+        for kolom, type_ in nieuw.items():
+            if kolom not in bestaande:
+                self.db.execute(f"ALTER TABLE documenten ADD COLUMN {kolom} {type_}")
+        self.db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_doc_serie "
+            "ON documenten(serie_bron_id, serie_volgnummer)"
+        )
 
     def _initialiseer_periodes(self):
         bestaand = self.db.execute("SELECT COUNT(*) FROM levensperiodes").fetchone()[0]
