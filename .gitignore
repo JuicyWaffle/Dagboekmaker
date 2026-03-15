@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
+# Corpus output (gegenereerd, niet tracken)
+corpus/corpus/
+corpus/dagboekmaker.db
+corpus/actors.json
+corpus/dashboard_data.json
