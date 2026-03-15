@@ -433,6 +433,94 @@ function StatsSection({ stats }) {
   );
 }
 
+// ── Bronanalyse Section ─────────────────────────────────────────────────────
+function BronanalyseSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState('alle');
+
+  const laden = () => {
+    setLoading(true);
+    api.get('/api/bronanalyse').then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  if (!data && !loading) {
+    return (
+      <div className="card" style={{textAlign:'center', padding:24}}>
+        <div style={{color:'var(--muted)', fontSize:13, marginBottom:10}}>
+          Analyseer bestandstypes in geconfigureerde bronpaden
+        </div>
+        <button className="btn-start btn-sm" onClick={laden}>Bronnen analyseren</button>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return <div className="card" style={{color:'var(--muted)', fontSize:13}}>Bezig met scannen...</div>;
+  }
+
+  const items = data.per_extensie || [];
+  const soorten = [...new Set(items.map(i => i.soort))].sort();
+  const gefilterd = filter === 'alle' ? items : items.filter(i => i.soort === filter);
+  const totaalGefilterd = gefilterd.reduce((s, i) => s + i.aantal, 0);
+
+  return (
+    <div className="card">
+      <div className="stat-grid" style={{marginBottom:14}}>
+        <div className="stat-card">
+          <div className="num">{data.totaal?.toLocaleString('nl')}</div>
+          <div className="lbl">Totaal bestanden</div>
+        </div>
+        <div className="stat-card">
+          <div className="num" style={{color:'var(--accent2)'}}>{data.verwerkbaar?.toLocaleString('nl')}</div>
+          <div className="lbl">Verwerkbaar</div>
+        </div>
+        <div className="stat-card">
+          <div className="num">{items.length}</div>
+          <div className="lbl">Extensies</div>
+        </div>
+      </div>
+
+      <div style={{display:'flex', gap:6, flexWrap:'wrap', marginBottom:10}}>
+        <button className={`btn-sm ${filter==='alle'?'btn-start':'btn-ghost'}`}
+          onClick={() => setFilter('alle')}>Alle ({items.length})</button>
+        {soorten.map(s => {
+          const n = items.filter(i => i.soort === s).reduce((sum,i) => sum + i.aantal, 0);
+          return <button key={s} className={`btn-sm ${filter===s?'btn-start':'btn-ghost'}`}
+            onClick={() => setFilter(s)}>{s} ({n.toLocaleString('nl')})</button>;
+        })}
+      </div>
+
+      <div style={{maxHeight:300, overflowY:'auto'}}>
+        <table style={{width:'100%', fontSize:12, borderCollapse:'collapse'}}>
+          <thead>
+            <tr style={{textAlign:'left', color:'var(--muted)', borderBottom:'1px solid var(--border)'}}>
+              <th style={{padding:'4px 8px'}}>Extensie</th>
+              <th style={{padding:'4px 8px'}}>Soort</th>
+              <th style={{padding:'4px 8px', textAlign:'right'}}>Aantal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {gefilterd.map(i => (
+              <tr key={i.extensie} style={{borderBottom:'1px solid var(--border)'}}>
+                <td style={{padding:'3px 8px', fontFamily:'monospace', color:'var(--accent)'}}>{i.extensie}</td>
+                <td style={{padding:'3px 8px', color:'var(--muted)'}}>{i.soort}</td>
+                <td style={{padding:'3px 8px', textAlign:'right'}}>{i.aantal.toLocaleString('nl')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {filter !== 'alle' && (
+        <div style={{marginTop:8, fontSize:11, color:'var(--muted)'}}>
+          Subtotaal: {totaalGefilterd.toLocaleString('nl')} bestanden
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── App ──────────────────────────────────────────────────────────────────────
 function App() {
   const [config, setConfig] = useState({ corpus_pad: '', bronnen: [], backend: 'ollama', tweede_pass: true });
@@ -485,6 +573,9 @@ function App() {
 
       <h2>Corpus</h2>
       <StatsSection stats={stats} />
+
+      <h2>Bronanalyse</h2>
+      <BronanalyseSection />
     </div>
   );
 }

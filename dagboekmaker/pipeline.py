@@ -18,6 +18,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -367,22 +368,88 @@ class Pipeline:
 
     @staticmethod
     def _integreer_datering_hints(datum, verrijking):
-        """Verwerkt LLM datering_hints in de dateringsredenering."""
+        """Verwerkt LLM datering_hints: past zekerheid en jaarbereik aan."""
         if not verrijking.datering_hints:
             return
         hints = verrijking.datering_hints
+
+        # Expliciete vermeldingen — probeer jaartallen te extraheren
         for citaat in hints.get("expliciete_vermeldingen", []):
+            jaren = re.findall(r"\b((?:19|20)\d{2})\b", citaat)
+            if jaren:
+                gevonden = [int(j) for j in jaren]
+                nieuw_min = max(datum.jaar_min, min(gevonden))
+                nieuw_max = min(datum.jaar_max, max(gevonden))
+                if nieuw_min <= nieuw_max:
+                    datum.jaar_min = nieuw_min
+                    datum.jaar_max = nieuw_max
+                    datum.zekerheid = max(datum.zekerheid, 0.75)
+                    datum.redenering.append({
+                        "type": "llm_hint_expliciet",
+                        "bewijs": citaat,
+                        "gewicht": 0.75,
+                        "effect": f"jaar beperkt tot {nieuw_min}–{nieuw_max}",
+                    })
+                    datum._log_versie("llm_hint_expliciet",
+                                      f"Jaar {nieuw_min}–{nieuw_max} via '{citaat[:60]}'")
+                    continue
             datum.redenering.append({
                 "type": "llm_hint_expliciet",
                 "bewijs": citaat,
                 "gewicht": 0.6,
             })
+
+        # Cultuurverwijzingen — probeer jaartallen te extraheren
         for cultuur in hints.get("cultuurverwijzingen", []):
+            jaren = re.findall(r"\b((?:19|20)\d{2})\b", cultuur)
+            if jaren:
+                gevonden = [int(j) for j in jaren]
+                nieuw_min = max(datum.jaar_min, min(gevonden) - 1)
+                nieuw_max = min(datum.jaar_max, max(gevonden) + 2)
+                if nieuw_min <= nieuw_max:
+                    datum.jaar_min = nieuw_min
+                    datum.jaar_max = nieuw_max
+                    datum.zekerheid = max(datum.zekerheid, 0.55)
+                    datum.redenering.append({
+                        "type": "llm_hint_cultuur",
+                        "bewijs": cultuur,
+                        "gewicht": 0.55,
+                        "effect": f"jaar beperkt tot {nieuw_min}–{nieuw_max}",
+                    })
+                    datum._log_versie("llm_hint_cultuur",
+                                      f"Jaar {nieuw_min}–{nieuw_max} via '{cultuur[:60]}'")
+                    continue
             datum.redenering.append({
                 "type": "llm_hint_cultuur",
                 "bewijs": cultuur,
                 "gewicht": 0.4,
             })
+
+        # Leeftijdsverwijzingen — schat geboorte ~1975 (auteur)
+        AUTEUR_GEBOORTEJAAR = 1975
+        for leeftijd_hint in hints.get("leeftijdsverwijzingen", []):
+            m = re.search(r"(\d{1,2})\s*(?:jaar|jarig|word|wordt)", leeftijd_hint)
+            if m:
+                leeftijd = int(m.group(1))
+                geschat_jaar = AUTEUR_GEBOORTEJAAR + leeftijd
+                nieuw_min = max(datum.jaar_min, geschat_jaar - 1)
+                nieuw_max = min(datum.jaar_max, geschat_jaar + 1)
+                if nieuw_min <= nieuw_max:
+                    datum.jaar_min = nieuw_min
+                    datum.jaar_max = nieuw_max
+                    datum.zekerheid = max(datum.zekerheid, 0.6)
+                    datum.redenering.append({
+                        "type": "llm_hint_leeftijd",
+                        "bewijs": leeftijd_hint,
+                        "gewicht": 0.6,
+                        "effect": f"leeftijd {leeftijd} → circa {geschat_jaar}",
+                    })
+                    datum._log_versie("llm_hint_leeftijd",
+                                      f"Leeftijd {leeftijd} → ~{geschat_jaar}")
+
+        # Update schatting na hints
+        from .datering import _stel_schatting_in
+        _stel_schatting_in(datum)
 
     # ── Tweede pass: Claude-verfijning ───────────────────────────────────────
 

@@ -45,6 +45,20 @@ def _sniff(p: Path) -> Optional[str]:
                 return _sniff_zip(p)
             return methode
 
+    # ── Afbeeldingen ──
+    if hoofd[:2] == b"\xff\xd8":                          # JPEG
+        return "image"
+    if hoofd[:8] == b"\x89PNG\r\n\x1a\n":                 # PNG
+        return "image"
+    if hoofd[:6] in (b"GIF87a", b"GIF89a"):               # GIF
+        return "image"
+    if hoofd[:2] in (b"BM",):                              # BMP
+        return "image"
+    if hoofd[:4] == b"RIFF" and hoofd[8:12] == b"WEBP":   # WebP
+        return "image"
+    if hoofd[:4] in (b"II\x2a\x00", b"MM\x00\x2a"):      # TIFF (incl. CR2/NEF/ARW)
+        return "image"
+
     # ── HTML / XML ──
     stripped = hoofd.lstrip()[:5].lower()
     if stripped.startswith((b"<html", b"<!doc", b"<?xml")):
@@ -199,6 +213,24 @@ EXTENSIONS = {
 
     # ── Gecomprimeerde helppagina's ───────────────────────────────────────
     ".chm":  "chm",           # Compiled HTML Help
+
+    # ── Afbeeldingen (EXIF + optioneel OCR) ────────────────────────────
+    ".jpg":  "image",
+    ".jpeg": "image",
+    ".jpe":  "image",
+    ".png":  "image",
+    ".bmp":  "image",
+    ".gif":  "image",
+    ".tif":  "image",
+    ".tiff": "image",
+    ".webp": "image",
+    ".heic": "image",
+    ".heif": "image",
+    ".cr2":  "image",         # Canon RAW
+    ".rw2":  "image",         # Panasonic RAW
+    ".nef":  "image",         # Nikon RAW
+    ".arw":  "image",         # Sony RAW
+    ".dng":  "image",         # Adobe DNG
 }
 
 
@@ -256,6 +288,12 @@ def extraheer(pad: str) -> ExtractieResultaat:
             tekst = _via_libreoffice(p)  # LibreOffice kan XPS
         elif methode == "chm":
             tekst = _via_chm(p)
+        elif methode == "image":
+            tekst, exif = _via_image(p)
+            return ExtractieResultaat(
+                pad=str(pad), formaat=ext, methode=methode,
+                tekst=tekst, exif=exif, bestandsdatum=bestandsdatum
+            )
         else:
             return ExtractieResultaat(
                 pad=str(pad), formaat=ext, methode="onbekend",
@@ -512,6 +550,63 @@ def _via_chm(p: Path) -> str:
     except FileNotFoundError:
         pass
     raise RuntimeError("CHM-extractie: 7z niet gevonden")
+
+
+def _via_image(p: Path) -> tuple[str, dict]:
+    """Extraheert EXIF-data en optioneel OCR-tekst uit een afbeelding."""
+    exif = _lees_exif(p)
+    tekst = ""
+
+    # OCR via tesseract (als beschikbaar)
+    try:
+        import pytesseract
+        from PIL import Image
+        img = Image.open(str(p))
+        # Alleen OCR op redelijk formaat afbeeldingen (geen tiny thumbnails)
+        w, h = img.size
+        if w >= 200 and h >= 200:
+            raw = pytesseract.image_to_string(img, lang="nld+eng", timeout=30)
+            tekst = raw.strip() if raw else ""
+    except Exception as e:
+        log.debug("OCR overgeslagen voor %s: %s", p.name, e)
+
+    return tekst, exif
+
+
+def _lees_exif(p: Path) -> dict:
+    """Leest EXIF-metadata uit een afbeelding via Pillow."""
+    exif = {}
+    try:
+        from PIL import Image
+        from PIL.ExifTags import TAGS, GPSTAGS
+        img = Image.open(str(p))
+        raw_exif = img.getexif()
+        if not raw_exif:
+            return exif
+
+        # Standaard EXIF-tags
+        for tag_id, waarde in raw_exif.items():
+            tag = TAGS.get(tag_id, str(tag_id))
+            if isinstance(waarde, bytes):
+                continue  # skip binaire data
+            exif[tag] = str(waarde)
+
+        # IFD-specifieke data (bevat DateTimeOriginal, DateTimeDigitized)
+        for ifd_key in [0x8769, 0x8825]:  # Exif IFD, GPS IFD
+            ifd = raw_exif.get_ifd(ifd_key)
+            if not ifd:
+                continue
+            tag_map = GPSTAGS if ifd_key == 0x8825 else TAGS
+            for tag_id, waarde in ifd.items():
+                tag = tag_map.get(tag_id, str(tag_id))
+                if isinstance(waarde, bytes):
+                    continue
+                exif[tag] = str(waarde)
+
+    except Exception as e:
+        log.debug("EXIF-lezing mislukt voor %s: %s", p.name, e)
+
+    return exif
 
 
 def _strip_html(raw: str) -> str:

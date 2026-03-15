@@ -125,6 +125,9 @@ def dateer_lokaal(tekst: str, bestandsdatum: Optional[str] = None,
     if d.dag and d.maand and not (d.jaar_min == d.jaar_max):
         _kalender_check(d)
 
+    # 3b. Relatieve datums oplossen via contextankers
+    _resolv_relatieve_datums(tekst, d)
+
     # 4. Bestandsdatum als zwakke prior
     if bestandsdatum and d.zekerheid < 0.5:
         try:
@@ -275,6 +278,68 @@ def _stel_schatting_in(d: DatumOnzekerheid):
     else:
         span = d.jaar_max - d.jaar_min
         d.datum_geschat = f"{d.jaar_min}–{d.jaar_max}"
+
+
+# ── Fase 1b: relatieve datering via contextankers ────────────────────────────
+
+def _zoek_absolute_jaren(tekst: str) -> list[int]:
+    """Vindt alle expliciete jaartallen (19xx/20xx) in de tekst."""
+    return [int(m) for m in re.findall(r"\b((?:19|20)\d{2})\b", tekst)]
+
+
+def _resolv_relatieve_datums(tekst: str, d: DatumOnzekerheid):
+    """
+    Als de tekst dag+maand zonder jaar bevat maar elders in dezelfde tekst
+    absolute datums staan, gebruik die als anker.
+
+    Voorbeeld: "2 januari" + verderop "10 januari 2015" → 2 januari 2015
+    """
+    if d.jaar_min == d.jaar_max and d.zekerheid >= 0.8:
+        return  # al opgelost
+
+    ankerjaren = _zoek_absolute_jaren(tekst)
+    if not ankerjaren:
+        return
+
+    # Tel frequenties — het meest genoemde jaar is het sterkste anker
+    from collections import Counter
+    freq = Counter(ankerjaren)
+    meest_voorkomend, n = freq.most_common(1)[0]
+
+    # Alleen toepassen als er een duidelijk ankerjaar is
+    if n < 1:
+        return
+
+    # Als dag+maand al gevonden maar jaar niet: gebruik anker
+    if d.dag and d.maand and d.jaar_min != d.jaar_max:
+        d.jaar_min = d.jaar_max = meest_voorkomend
+        d.zekerheid = max(d.zekerheid, 0.70)
+        d.datum_geschat = f"{meest_voorkomend}-{d.maand:02d}-{d.dag:02d}"
+        d.redenering.append({
+            "type": "contextanker",
+            "bewijs": f"Relatieve datum {d.dag}/{d.maand} opgelost via "
+                      f"ankerjaar {meest_voorkomend} ({n}x genoemd in tekst)",
+            "gewicht": 0.70,
+        })
+        d._log_versie("contextanker_relatief",
+                      f"Jaar {meest_voorkomend} als anker (freq={n})")
+        return
+
+    # Geen dag/maand maar we kunnen het bereik beperken
+    if d.jaar_min < min(ankerjaren) or d.jaar_max > max(ankerjaren):
+        nieuw_min = max(d.jaar_min, min(ankerjaren) - 1)
+        nieuw_max = min(d.jaar_max, max(ankerjaren) + 1)
+        if nieuw_min <= nieuw_max:
+            d.jaar_min = nieuw_min
+            d.jaar_max = nieuw_max
+            d.zekerheid = max(d.zekerheid, 0.45)
+            d.redenering.append({
+                "type": "contextanker_bereik",
+                "bewijs": f"Ankerjaren in tekst: {sorted(set(ankerjaren))} → "
+                          f"bereik {nieuw_min}–{nieuw_max}",
+                "gewicht": 0.45,
+            })
+            d._log_versie("contextanker_bereik")
 
 
 # ── Fase 2: globale constraints ───────────────────────────────────────────────
