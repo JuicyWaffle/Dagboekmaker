@@ -140,6 +140,61 @@ def cmd_narratief(args):
     c.sluit()
 
 
+def cmd_gaten(args):
+    """Toont tijdlijn-gaten (periodes zonder documenten)."""
+    from dagboekmaker.corpus import Corpus
+    c = Corpus(args.corpus)
+    gaten = c.tijdlijn_gaten(min_gap_maanden=args.min_maanden)
+
+    if not gaten:
+        print("\nGeen significante gaten gevonden in de tijdlijn.")
+        c.sluit()
+        return
+
+    print(f"\n{'Van':<12} {'Tot':<12} {'Duur':>6}   Opmerking")
+    print("─" * 55)
+    for g in gaten:
+        duur = f"{g['duur_maanden']}m"
+        bar = "░" * min(g["duur_maanden"], 30)
+        print(f"{g['van']:<12} {g['tot']:<12} {duur:>6}   {bar}")
+
+    totaal_maanden = sum(g["duur_maanden"] for g in gaten)
+    print(f"\n{len(gaten)} gaten, totaal ~{totaal_maanden} maanden ongedocumenteerd")
+    print("Tip: deze periodes zijn geschikt voor tijdsprongen, voice-over of flashbacks.")
+    c.sluit()
+
+
+def cmd_actorprofiel(args):
+    """Toont het profiel van een actor."""
+    from dagboekmaker.corpus import Corpus
+    c = Corpus(args.corpus)
+    profiel = c.actor_profiel(args.actor_id)
+    if not profiel:
+        print(f"Actor '{args.actor_id}' niet gevonden.")
+        c.sluit()
+        return
+
+    print(f"\n{'='*50}")
+    print(f"ACTOR: {profiel.get('naam', '?')}")
+    print(f"{'='*50}")
+    print(f"ID:              {profiel['id']}")
+    print(f"Aliassen:        {', '.join(profiel.get('aliassen', [])) or '—'}")
+    print(f"Relatie:         {profiel.get('meest_voorkomende_relatie', '?')}")
+    print(f"Documenten:      {profiel.get('aantal_docs', 0)}")
+    print(f"Eerste optreden: {profiel.get('eerste_vermelding', '?')}")
+    print(f"Laatste optreden:{profiel.get('laatste_vermelding', '?')}")
+
+    # Toon tijdlijn
+    tijdlijn = c.actor_tijdlijn(args.actor_id)
+    if tijdlijn:
+        print(f"\nTijdlijn ({len(tijdlijn)} vermeldingen):")
+        for t in tijdlijn[:args.max]:
+            rel = f" [{t['relatie']}]" if t.get("relatie") else ""
+            print(f"  {t.get('datum_geschat','?'):12}  {t.get('type','?'):10}"
+                  f"{rel}  {(t.get('samenvatting') or '')[:50]}")
+    c.sluit()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Dagboekmaker — persoonlijk archief naar scriptbasis"
@@ -186,6 +241,20 @@ def main():
                         choices=["kindertijd","adolescentie","jong_volwassen",
                                  "breekpunt","opbouw","heden"])
     p_narr.set_defaults(func=cmd_narratief)
+
+    # gaten
+    p_gaten = sub.add_parser("gaten", help="Tijdlijn-gaten (ongedocumenteerde periodes)")
+    p_gaten.add_argument("--corpus", required=True)
+    p_gaten.add_argument("--min-maanden", type=int, default=6,
+                         help="Minimale duur in maanden om als gat te tellen (default: 6)")
+    p_gaten.set_defaults(func=cmd_gaten)
+
+    # actorprofiel
+    p_actor = sub.add_parser("actorprofiel", help="Profiel en tijdlijn van een actor")
+    p_actor.add_argument("--corpus", required=True)
+    p_actor.add_argument("--actor-id", required=True, help="Actor-ID (bv. actor_b41264db)")
+    p_actor.add_argument("--max", type=int, default=20)
+    p_actor.set_defaults(func=cmd_actorprofiel)
 
     args = parser.parse_args()
     args.func(args)

@@ -72,6 +72,15 @@ CREATE TABLE IF NOT EXISTS levensperiodes (
     volgorde INTEGER
 );
 
+CREATE TABLE IF NOT EXISTS actor_relaties (
+    actor_id    TEXT,
+    doc_id      TEXT,
+    relatie     TEXT,
+    PRIMARY KEY (actor_id, doc_id),
+    FOREIGN KEY (actor_id) REFERENCES actors(id),
+    FOREIGN KEY (doc_id)   REFERENCES documenten(id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_doc_datum  ON documenten(datum_vroegst, datum_laatst);
 CREATE INDEX IF NOT EXISTS idx_doc_type   ON documenten(type);
 CREATE INDEX IF NOT EXISTS idx_doc_toon   ON documenten(emotionele_toon);
@@ -241,6 +250,129 @@ class Corpus:
             result[d["id"]] = d
         return result
 
+    def actor_tijdlijn(self, actor_id: str) -> list[dict]:
+        """Geeft chronologische lijst van documenten met een actor, inclusief relatie-type."""
+        rijen = self.db.execute("""
+            SELECT d.id, d.datum_geschat, d.samenvatting, d.type,
+                   da.rol,
+                   ar.relatie
+            FROM documenten d
+            JOIN doc_actors da ON d.id = da.doc_id
+            LEFT JOIN actor_relaties ar ON ar.actor_id = da.actor_id AND ar.doc_id = d.id
+            WHERE da.actor_id = ?
+            ORDER BY d.datum_vroegst
+        """, (actor_id,)).fetchall()
+        return [dict(r) for r in rijen]
+
+    def actor_profiel(self, actor_id: str) -> Optional[dict]:
+        """Geeft samengevat profiel van een actor: naam, periode, frequentie, relatie."""
+        tijdlijn = self.actor_tijdlijn(actor_id)
+        if not tijdlijn:
+            # Check of actor überhaupt bestaat (in doc_actors of actors tabel)
+            exists = self.db.execute(
+                "SELECT 1 FROM doc_actors WHERE actor_id = ? LIMIT 1", (actor_id,)
+            ).fetchone()
+            if not exists:
+                return None
+            return {"id": actor_id, "aantal_docs": 0}
+
+        # Haal naam uit actors-tabel, of uit doc JSON
+        actor = self.db.execute("SELECT * FROM actors WHERE id = ?", (actor_id,)).fetchone()
+        basis = dict(actor) if actor else {"id": actor_id}
+        if actor and actor["aliassen"]:
+            basis["aliassen"] = json.loads(actor["aliassen"])
+        else:
+            basis.setdefault("aliassen", [])
+
+        # Zoek naam uit corpus JSON als actors-tabel leeg is
+        if not basis.get("naam"):
+            eerste_doc = self.haal_document_op(tijdlijn[0]["id"])
+            if eerste_doc:
+                for a in eerste_doc.get("actors", []):
+                    if a.get("ref") == actor_id:
+                        basis["naam"] = a.get("_naam_origineel", "?")
+                        break
+
+        # Meest voorkomende relatie
+        from collections import Counter
+        relaties = [t["relatie"] for t in tijdlijn if t.get("relatie")]
+        meest_rel = Counter(relaties).most_common(1)[0][0] if relaties else None
+
+        return {
+            **basis,
+            "aantal_docs": len(tijdlijn),
+            "eerste_vermelding": tijdlijn[0]["datum_geschat"],
+            "laatste_vermelding": tijdlijn[-1]["datum_geschat"],
+            "meest_voorkomende_relatie": meest_rel,
+        }
+
+    def tijdlijn_gaten(self, min_gap_maanden: int = 6) -> list[dict]:
+        """Vindt gaten in de tijdlijn waar geen documenten zijn.
+
+        Geeft lijst van dicts: {"van", "tot", "duur_maanden", "voor_doc", "na_doc"}
+        """
+        rijen = self.db.execute("""
+            SELECT id, datum_geschat, datum_vroegst
+            FROM documenten
+            WHERE datum_vroegst IS NOT NULL
+              AND zekerheid >= 0.5
+            ORDER BY datum_vroegst
+        """).fetchall()
+
+        if len(rijen) < 2:
+            return []
+
+        import re
+        from datetime import date as dt_date
+
+        def _parse_datum(s):
+            if not s:
+                return None
+            m = re.match(r"(\d{4})-(\d{2})-(\d{2})", s)
+            if m:
+                try:
+                    return dt_date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+                except ValueError:
+                    pass
+            m = re.match(r"(\d{4})-(\d{2})", s)
+            if m:
+                try:
+                    return dt_date(int(m.group(1)), int(m.group(2)), 1)
+                except ValueError:
+                    pass
+            m = re.match(r"(\d{4})", s)
+            if m:
+                return dt_date(int(m.group(1)), 1, 1)
+            return None
+
+        gaten = []
+        vorig_id = rijen[0]["id"]
+        vorig_datum = _parse_datum(rijen[0]["datum_vroegst"])
+
+        for rij in rijen[1:]:
+            huidige_datum = _parse_datum(rij["datum_vroegst"])
+            if not vorig_datum or not huidige_datum:
+                vorig_id = rij["id"]
+                vorig_datum = huidige_datum
+                continue
+
+            verschil_dagen = (huidige_datum - vorig_datum).days
+            verschil_maanden = verschil_dagen / 30.44
+
+            if verschil_maanden >= min_gap_maanden:
+                gaten.append({
+                    "van": vorig_datum.isoformat(),
+                    "tot": huidige_datum.isoformat(),
+                    "duur_maanden": round(verschil_maanden),
+                    "voor_doc": vorig_id,
+                    "na_doc": rij["id"],
+                })
+
+            vorig_id = rij["id"]
+            vorig_datum = huidige_datum
+
+        return gaten
+
     def exporteer_actors_json(self) -> Path:
         pad = self.root / "actors.json"
         pad.write_text(json.dumps(self.haal_alle_actors_op(),
@@ -253,14 +385,17 @@ class Corpus:
         t = doc.get("tijdstip", {})
         n = doc.get("narratief", {})
         s = doc.get("serie", {})
+        sw = doc.get("scriptwriter", {})
+        conflict = sw.get("conflict", {})
         self.db.execute("""
             INSERT OR REPLACE INTO documenten
             (id, pad_origineel, formaat, datum_geschat, datum_vroegst, datum_laatst,
              precisie, zekerheid, type, taal, samenvatting, themas, emotionele_toon,
              spanning, keerpunt, levensperiode, pad_json, verwerkt_op,
              serie_bron_id, serie_volgnummer, serie_totaal,
-             serie_vorige_id, serie_volgende_id)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             serie_vorige_id, serie_volgende_id,
+             scene_potentieel, locatie, conflict_type)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             doc["id"],
             doc.get("bestand_origineel"),
@@ -285,6 +420,9 @@ class Corpus:
             s.get("totaal"),
             s.get("vorige_id"),
             s.get("volgende_id"),
+            sw.get("scene_potentieel"),
+            sw.get("locatie"),
+            conflict.get("type") if isinstance(conflict, dict) else None,
         ))
 
     def _upsert_actors(self, doc: dict):
@@ -304,15 +442,38 @@ class Corpus:
                 except sqlite3.IntegrityError:
                     pass
 
+            # Update actor-relatie als die beschikbaar is
+            relatie = actor_ref.get("relatie_tot_auteur")
+            if relatie:
+                # Sla op in actors-tabel (als relatie nog leeg)
+                self.db.execute(
+                    "UPDATE actors SET relatie = ? WHERE id = ? AND (relatie IS NULL OR relatie = '')",
+                    (relatie, ref)
+                )
+                # Sla op in actor_relaties (per document)
+                try:
+                    self.db.execute(
+                        "INSERT OR REPLACE INTO actor_relaties (actor_id, doc_id, relatie) "
+                        "VALUES (?,?,?)",
+                        (ref, doc["id"], relatie)
+                    )
+                except sqlite3.IntegrityError:
+                    pass
+
     def _migreer_schema(self):
-        """Voegt serie-kolommen toe als ze nog niet bestaan (v0.2 migratie)."""
+        """Voegt nieuwe kolommen toe als ze nog niet bestaan."""
         bestaande = {r[1] for r in self.db.execute("PRAGMA table_info(documenten)").fetchall()}
         nieuw = {
+            # v0.2: serie-kolommen
             "serie_bron_id": "TEXT",
             "serie_volgnummer": "INTEGER",
             "serie_totaal": "INTEGER",
             "serie_vorige_id": "TEXT",
             "serie_volgende_id": "TEXT",
+            # v0.3: scriptwriter-kolommen
+            "scene_potentieel": "REAL",
+            "locatie": "TEXT",
+            "conflict_type": "TEXT",
         }
         for kolom, type_ in nieuw.items():
             if kolom not in bestaande:

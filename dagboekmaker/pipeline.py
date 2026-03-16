@@ -238,11 +238,14 @@ class Pipeline:
             exif=extractie.exif or {},
             bestand_pad=pad,
         )
-        verrijking = self.verrijker.verrijk(tekst)
+        # Vision: stuur afbeelding mee als het een image-extractie is
+        image_pad = pad if extractie.methode == "image" else None
+        verrijking = self.verrijker.verrijk(tekst, image_pad=image_pad)
         self._integreer_datering_hints(datum, verrijking)
 
         levensperiode = self._bepaal_levensperiode(datum.datum_geschat)
         actors = _normaliseer_actoren(verrijking.actoren)
+        sw = verrijking.scriptwriter
         doc = {
             "id": doc_id,
             "tijdstip": datum.als_dict(),
@@ -263,6 +266,7 @@ class Pipeline:
                 **verrijking.narratief,
                 "levensperiode": levensperiode,
             },
+            "scriptwriter": sw,
             "levensperiode": levensperiode,
             "financieel": None,
             "verwerkings_meta": {
@@ -303,6 +307,8 @@ class Pipeline:
         # Pass 1: dateer + verrijk elk fragment
         verwerkte = []  # lijst van (frag, datum, verrijking)
         vorig_tekst = None
+        # Vision: stuur afbeelding alleen mee voor het eerste fragment
+        image_pad = pad if extractie.methode == "image" else None
         for frag in fragmenten:
             datum = dateer_lokaal(
                 frag.tekst,
@@ -310,7 +316,9 @@ class Pipeline:
                 exif=extractie.exif or {},
                 bestand_pad=pad,
             )
-            verrijking = self.verrijker.verrijk(frag.tekst, context=vorig_tekst)
+            frag_image = image_pad if frag.volgnummer == 0 else None
+            verrijking = self.verrijker.verrijk(
+                frag.tekst, context=vorig_tekst, image_pad=frag_image)
             self._integreer_datering_hints(datum, verrijking)
             verwerkte.append((frag, datum, verrijking))
             vorig_tekst = frag.tekst[-500:]
@@ -332,6 +340,7 @@ class Pipeline:
             levensperiode = self._bepaal_levensperiode(datum.datum_geschat)
             actors = _normaliseer_actoren(verrijking.actoren)
 
+            sw = verrijking.scriptwriter
             doc = {
                 "id": frag_id,
                 "tijdstip": datum.als_dict(),
@@ -362,6 +371,7 @@ class Pipeline:
                     **verrijking.narratief,
                     "levensperiode": levensperiode,
                 },
+                "scriptwriter": sw,
                 "levensperiode": levensperiode,
                 "financieel": None,
                 "verwerkings_meta": {
@@ -496,11 +506,20 @@ class Pipeline:
                 })
 
             tekst = doc.get("inhoud", {}).get("plaintext", "")
-            if not tekst:
+
+            # Vision: stuur afbeelding mee als het een image-document is
+            image_pad = None
+            formaat = doc.get("formaat_origineel", "")
+            bron = doc.get("bestand_origineel", "")
+            if formaat in (".jpg", ".jpeg", ".png", ".gif", ".webp") and Path(bron).exists():
+                image_pad = bron
+
+            if not tekst and not image_pad:
                 continue
 
             try:
-                verrijking = self._verrijker_claude.verrijk(tekst)
+                verrijking = self._verrijker_claude.verrijk(
+                    tekst, image_pad=image_pad)
                 if verrijking.fout:
                     log.warning("Claude-pass fout voor %s: %s", doc["id"], verrijking.fout)
                     continue
@@ -524,11 +543,17 @@ class Pipeline:
                 if verrijking.narratief:
                     doc["narratief"] = {**doc.get("narratief", {}), **verrijking.narratief}
 
+                # Scriptwriter-velden mergen
+                if verrijking.scriptwriter:
+                    doc["scriptwriter"] = {
+                        **doc.get("scriptwriter", {}),
+                        **verrijking.scriptwriter,
+                    }
+
                 # Datering hints toevoegen
-                if verrijking.datering_hints:
-                    meta = doc.get("verwerkings_meta", {})
-                    meta["claude_pass"] = datetime.now(tz=timezone.utc).isoformat()
-                    doc["verwerkings_meta"] = meta
+                meta = doc.get("verwerkings_meta", {})
+                meta["claude_pass"] = datetime.now(tz=timezone.utc).isoformat()
+                doc["verwerkings_meta"] = meta
 
                 self.corpus.sla_document_op(doc)
                 log.debug("Claude-pass: %s verfijnd", doc["id"])
@@ -624,7 +649,8 @@ def _canonicalize_actor_naam(naam: str) -> str:
 
 
 def _normaliseer_actoren(actoren: list) -> list:
-    """Maak actor-refs van LLM-output (namen → IDs). Ondersteunt meervoudige rollen."""
+    """Maak actor-refs van LLM-output (namen → IDs). Ondersteunt meervoudige rollen
+    en bewaart biografische velden (geschatte_leeftijd, relatie_tot_auteur)."""
     # Groepeer per naam zodat dezelfde actor meerdere rollen kan krijgen
     per_naam = {}
     for a in actoren:
@@ -634,18 +660,33 @@ def _normaliseer_actoren(actoren: list) -> list:
         sleutel = _canonicalize_actor_naam(naam).lower()
         rol = a.get("rol", "vermeld")
         if sleutel not in per_naam:
-            per_naam[sleutel] = {"naam": naam, "rollen": set()}
+            per_naam[sleutel] = {
+                "naam": naam,
+                "rollen": set(),
+                "geschatte_leeftijd": None,
+                "relatie_tot_auteur": None,
+            }
         per_naam[sleutel]["rollen"].add(rol)
+        # Bewaar eerst-gevonden biografische info
+        if a.get("geschatte_leeftijd") and not per_naam[sleutel]["geschatte_leeftijd"]:
+            per_naam[sleutel]["geschatte_leeftijd"] = a["geschatte_leeftijd"]
+        if a.get("relatie_tot_auteur") and not per_naam[sleutel]["relatie_tot_auteur"]:
+            per_naam[sleutel]["relatie_tot_auteur"] = a["relatie_tot_auteur"]
 
     result = []
     for sleutel, info in per_naam.items():
         actor_id = "actor_" + hashlib.sha1(sleutel.encode()).hexdigest()[:8]
         rollen = sorted(info["rollen"])
-        result.append({
+        entry = {
             "ref": actor_id,
             "rol": rollen[0] if len(rollen) == 1 else rollen,
             "_naam_origineel": info["naam"],
-        })
+        }
+        if info["geschatte_leeftijd"]:
+            entry["geschatte_leeftijd"] = info["geschatte_leeftijd"]
+        if info["relatie_tot_auteur"]:
+            entry["relatie_tot_auteur"] = info["relatie_tot_auteur"]
+        result.append(entry)
     return result
 
 
