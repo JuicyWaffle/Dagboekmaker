@@ -31,6 +31,20 @@ from .verrijking import maak_verrijker
 
 log = logging.getLogger(__name__)
 
+# Bestanden die nooit persoonlijke documenten zijn → overslaan
+SKIP_EXTENSIONS = {
+    # Code & web
+    ".js", ".jsx", ".ts", ".tsx", ".vue", ".svelte",
+    ".css", ".scss", ".sass", ".less",
+    ".map", ".min",
+    # Config & data
+    ".json", ".xml", ".ini", ".cfg", ".yaml", ".yml", ".toml",
+    # Fonts & binair
+    ".woff", ".woff2", ".ttf", ".eot", ".otf",
+    # Vector/grafisch (niet-foto)
+    ".svg",
+}
+
 
 def _maak_doc_id(pad: str) -> str:
     """Stabiel, deterministisch ID op basis van bestandspad."""
@@ -118,6 +132,7 @@ class Pipeline:
         bestanden = [
             p for p in self.bronmap.glob(glob)
             if p.is_file()
+            and p.suffix.lower() not in SKIP_EXTENSIONS
             and (p.suffix.lower() in EXTENSIONS
                  or _sniff(p) is not None)
         ]
@@ -221,6 +236,7 @@ class Pipeline:
             tekst,
             bestandsdatum=extractie.bestandsdatum,
             exif=extractie.exif or {},
+            bestand_pad=pad,
         )
         verrijking = self.verrijker.verrijk(tekst)
         self._integreer_datering_hints(datum, verrijking)
@@ -292,6 +308,7 @@ class Pipeline:
                 frag.tekst,
                 bestandsdatum=extractie.bestandsdatum,
                 exif=extractie.exif or {},
+                bestand_pad=pad,
             )
             verrijking = self.verrijker.verrijk(frag.tekst, context=vorig_tekst)
             self._integreer_datering_hints(datum, verrijking)
@@ -588,6 +605,24 @@ class Pipeline:
 
 # ── Hulpfuncties ──────────────────────────────────────────────────────────────
 
+_AUTEUR_VARIANTEN = {
+    "ik", "auteur", "schrijver", "de auteur", "de schrijver",
+    "ik (auteur)", "ik (schrijver)", "author", "the author",
+    "moi", "l'auteur",
+}
+
+
+def _canonicalize_actor_naam(naam: str) -> str:
+    """Mapt auteur-zelfverwijzingen naar één canonieke naam.
+
+    "Ik", "Auteur", "Schrijver" etc. → "auteur"
+    Alle andere namen blijven ongewijzigd.
+    """
+    if naam.strip().lower() in _AUTEUR_VARIANTEN:
+        return "auteur"
+    return naam
+
+
 def _normaliseer_actoren(actoren: list) -> list:
     """Maak actor-refs van LLM-output (namen → IDs). Ondersteunt meervoudige rollen."""
     # Groepeer per naam zodat dezelfde actor meerdere rollen kan krijgen
@@ -596,7 +631,7 @@ def _normaliseer_actoren(actoren: list) -> list:
         naam = a.get("naam", "").strip()
         if not naam:
             continue
-        sleutel = naam.lower()
+        sleutel = _canonicalize_actor_naam(naam).lower()
         rol = a.get("rol", "vermeld")
         if sleutel not in per_naam:
             per_naam[sleutel] = {"naam": naam, "rollen": set()}

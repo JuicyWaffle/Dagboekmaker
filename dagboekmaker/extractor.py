@@ -113,15 +113,9 @@ EXTENSIONS = {
     ".log":  "plaintext",
     ".asc":  "plaintext",
     ".nfo":  "plaintext",
-    ".ini":  "plaintext",
-    ".cfg":  "plaintext",
     ".tex":  "plaintext",     # LaTeX bronbestanden
     ".latex":"plaintext",
     ".bib":  "plaintext",     # BibTeX
-    ".xml":  "plaintext",
-    ".json": "plaintext",
-    ".yaml": "plaintext",
-    ".yml":  "plaintext",
 
     # ── Rich text / Tekstverwerkers ───────────────────────────────────────
     ".rtf":  "libreoffice",   # Rich Text Format

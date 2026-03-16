@@ -93,9 +93,10 @@ class DatumOnzekerheid:
 # ── Fase 1: lokale datering ───────────────────────────────────────────────────
 
 def dateer_lokaal(tekst: str, bestandsdatum: Optional[str] = None,
-                  exif: Optional[dict] = None) -> DatumOnzekerheid:
+                  exif: Optional[dict] = None,
+                  bestand_pad: Optional[str] = None) -> DatumOnzekerheid:
     """
-    Probeert datum te bepalen uit tekst, bestandsdatum en EXIF.
+    Probeert datum te bepalen uit tekst, bestandsdatum, EXIF en bestandsnaam.
     Geeft een DatumOnzekerheid terug, ook als er weinig info is.
     """
     d = DatumOnzekerheid()
@@ -117,6 +118,12 @@ def dateer_lokaal(tekst: str, bestandsdatum: Optional[str] = None,
                 })
                 d._log_versie("exif")
                 return d
+
+    # 1b. Datum uit bestandsnaam (bv. "2014-01-05 15.21.16.jpg")
+    if bestand_pad:
+        _zoek_datum_in_bestandsnaam(bestand_pad, d)
+        if d.zekerheid >= 0.85:
+            return d
 
     # 2. Expliciete datumpatronen in tekst
     _zoek_expliciete_datum(tekst, d)
@@ -152,6 +159,60 @@ def dateer_lokaal(tekst: str, bestandsdatum: Optional[str] = None,
         d._log_versie("fase1_geen_info", "Geen betrouwbare datum gevonden.")
 
     return d
+
+
+def _zoek_datum_in_bestandsnaam(pad: str, d: DatumOnzekerheid):
+    """Extraheert datum uit bestandsnaam of mappenpad.
+
+    Herkent patronen als:
+      - 2014-01-05 15.21.16.jpg   (spatie-gescheiden tijd)
+      - 2020-04-19/_MG_5408.JPG   (datum in mapnaam)
+      - 20130403_143642.jpg        (compacte camera-naamgeving)
+      - IMG_20130403_143642.jpg    (Android-stijl)
+    """
+    # Patroon 1: YYYY-MM-DD (met optionele tijd erna)
+    m = re.search(r"(\d{4})-(\d{2})-(\d{2})", pad)
+    if m:
+        jaar, maand, dag = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if JAAR_MIN <= jaar <= JAAR_MAX and 1 <= maand <= 12 and 1 <= dag <= 31:
+            try:
+                date(jaar, maand, dag)  # valideer kalender
+            except ValueError:
+                pass
+            else:
+                d.dag, d.maand = dag, maand
+                d.jaar_min = d.jaar_max = jaar
+                d.zekerheid = 0.85
+                d.datum_geschat = f"{jaar}-{maand:02d}-{dag:02d}"
+                d.redenering.append({
+                    "type": "bestandsnaam_datum",
+                    "bewijs": f"Datum in bestandspad: '{m.group()}'",
+                    "gewicht": 0.85,
+                })
+                d._log_versie("bestandsnaam_datum")
+                return
+
+    # Patroon 2: YYYYMMDD (compact, bv. 20130403_143642)
+    m = re.search(r"(?<!\d)(20\d{2}|19\d{2})(\d{2})(\d{2})(?:[_\s]|\b)", pad)
+    if m:
+        jaar, maand, dag = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if JAAR_MIN <= jaar <= JAAR_MAX and 1 <= maand <= 12 and 1 <= dag <= 31:
+            try:
+                date(jaar, maand, dag)
+            except ValueError:
+                pass
+            else:
+                d.dag, d.maand = dag, maand
+                d.jaar_min = d.jaar_max = jaar
+                d.zekerheid = 0.80
+                d.datum_geschat = f"{jaar}-{maand:02d}-{dag:02d}"
+                d.redenering.append({
+                    "type": "bestandsnaam_datum_compact",
+                    "bewijs": f"Compacte datum in bestandspad: '{m.group()}'",
+                    "gewicht": 0.80,
+                })
+                d._log_versie("bestandsnaam_datum_compact")
+                return
 
 
 def _parse_exif_datum(s: str) -> Optional[date]:
