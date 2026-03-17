@@ -431,6 +431,17 @@ class Corpus:
             rol = actor_ref.get("rol", "vermeld")
             if not ref:
                 continue
+
+            # Zorg dat de actor in de actors-tabel staat
+            self.db.execute("""
+                INSERT OR IGNORE INTO actors (id, naam, type, relatie)
+                VALUES (?, ?, 'persoon', ?)
+            """, (
+                ref,
+                actor_ref.get("_naam_origineel", ""),
+                actor_ref.get("relatie_tot_auteur"),
+            ))
+
             # rol kan een lijst zijn (meerdere rollen per actor)
             rollen = rol if isinstance(rol, list) else [rol]
             for r in rollen:
@@ -445,7 +456,7 @@ class Corpus:
             # Update actor-relatie als die beschikbaar is
             relatie = actor_ref.get("relatie_tot_auteur")
             if relatie:
-                # Sla op in actors-tabel (als relatie nog leeg)
+                # Update relatie in actors-tabel (als die nog leeg was)
                 self.db.execute(
                     "UPDATE actors SET relatie = ? WHERE id = ? AND (relatie IS NULL OR relatie = '')",
                     (relatie, ref)

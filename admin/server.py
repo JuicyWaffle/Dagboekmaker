@@ -243,8 +243,6 @@ class DagboekHandler(http.server.BaseHTTPRequestHandler):
             self._serve_file(ADMIN_DIR / "formaten.html", "text/html")
         elif path == "/api/formaten":
             self._handle_formaten()
-        elif path == "/api/bronanalyse":
-            self._handle_bronanalyse()
         else:
             self.send_error(404)
 
@@ -361,76 +359,6 @@ class DagboekHandler(http.server.BaseHTTPRequestHandler):
             "document_types": DOCUMENT_TYPES,
             "totaal_extensies": len(EXTENSIONS),
         })
-
-    def _handle_bronanalyse(self):
-        """Analyseert bestandstypes in de geconfigureerde bronpaden."""
-        try:
-            cfg = laad_config()
-            bronnen = cfg.get("bronnen", [])
-            teller = {}
-            totaal = 0
-            for bron in bronnen:
-                bron_pad = Path(bron).expanduser()
-                if not bron_pad.exists():
-                    continue
-                for p in bron_pad.rglob("*"):
-                    if not p.is_file():
-                        continue
-                    ext = p.suffix.lower() or "(geen)"
-                    teller[ext] = teller.get(ext, 0) + 1
-                    totaal += 1
-
-            # Categoriseer extensies
-            CATEGORIEEN = {
-                "Afbeelding": {".jpg",".jpeg",".jpe",".png",".gif",".bmp",".tif",".tiff",
-                               ".webp",".svg",".ico",".heic",".heif",".thm",".wpg"},
-                "RAW foto": {".cr2",".rw2",".nef",".arw",".dng"},
-                "Document": {".doc",".docx",".odt",".rtf",".wpd",".wp",".wp5",".wp4",
-                             ".wp6",".wp7",".wps",".wpt",".pages",".abw",".sdw",".sxw",
-                             ".wri",".sam",".wbk"},
-                "PDF": {".pdf"},
-                "Spreadsheet": {".xls",".xlsx",".xlsm",".ods",".csv",".numbers"},
-                "Presentatie": {".ppt",".pptx",".odp",".key"},
-                "Tekst": {".txt",".text",".md",".log",".nfo",".ini",".cfg",".conf"},
-                "Web": {".html",".htm",".css",".js",".php",".asp",".aspx",".jsp",
-                        ".phtml",".shtml",".xhtml",".mht",".mhtml"},
-                "E-mail": {".eml",".msg",".mbox",".emlx",".dbx"},
-                "Data": {".xml",".json",".yaml",".yml",".db",".sqlite",".dbf",
-                         ".dat",".mdx"},
-                "Video": {".avi",".mov",".mp4",".mpg",".mpeg",".wmv",".mkv",".flv",
-                          ".swf"},
-                "Audio": {".mp3",".wav",".mid",".ogg",".flac",".aac"},
-                "Archief": {".zip",".rar",".7z",".gz",".tar",".cab"},
-                "Uitvoerbaar": {".exe",".dll",".mst",".cab",".msi"},
-                "Lettertype": {".otf",".ttf",".woff",".woff2",".pfm",".pfb"},
-                "Overig": set(),
-            }
-
-            def categoriseer(ext):
-                for cat, exts in CATEGORIEEN.items():
-                    if ext in exts:
-                        return cat
-                return "Overig"
-
-            resultaat = []
-            for ext, n in sorted(teller.items(), key=lambda x: -x[1]):
-                resultaat.append({
-                    "extensie": ext,
-                    "soort": categoriseer(ext),
-                    "aantal": n,
-                })
-
-            # Verwerkbaar?
-            from dagboekmaker.extractor import EXTENSIONS
-            verwerkbaar = sum(n for ext, n in teller.items() if ext in EXTENSIONS)
-
-            self._json_response({
-                "totaal": totaal,
-                "verwerkbaar": verwerkbaar,
-                "per_extensie": resultaat,
-            })
-        except Exception as e:
-            self._json_response({"error": str(e)}, 500)
 
     def _handle_actors(self):
         """Retourneer alle actoren met documenttelling, gesorteerd op frequentie."""
