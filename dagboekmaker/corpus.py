@@ -109,6 +109,7 @@ class Corpus:
     def db(self) -> sqlite3.Connection:
         if self._db is None:
             self._db = sqlite3.connect(str(self.db_pad))
+            self._db.execute("PRAGMA foreign_keys = ON")
             self._db.row_factory = sqlite3.Row
             self._db.executescript(SCHEMA)
             self._migreer_schema()
@@ -136,11 +137,22 @@ class Corpus:
         json_pad = subdir / f"{doc_id}.json"
         json_pad.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
 
-        doc["pad_json"] = str(json_pad)
+        # Sla relatief pad op (t.o.v. corpus root) voor portabiliteit
+        try:
+            doc["pad_json"] = str(json_pad.relative_to(self.root))
+        except ValueError:
+            doc["pad_json"] = str(json_pad)
         self._upsert_document(doc)
         self._upsert_actors(doc)
         self.db.commit()
         return doc_id
+
+    def _resolve_pad(self, pad_str: str) -> Path:
+        """Resolve pad_json: ondersteunt zowel relatief als absoluut."""
+        pad = Path(pad_str)
+        if pad.is_absolute():
+            return pad
+        return self.root / pad
 
     def haal_document_op(self, doc_id: str) -> Optional[dict]:
         rij = self.db.execute(
@@ -148,7 +160,7 @@ class Corpus:
         ).fetchone()
         if not rij or not rij["pad_json"]:
             return None
-        pad = Path(rij["pad_json"])
+        pad = self._resolve_pad(rij["pad_json"])
         if pad.exists():
             return json.loads(pad.read_text(encoding="utf-8"))
         return None
@@ -159,7 +171,7 @@ class Corpus:
             "SELECT pad_json FROM documenten WHERE id = ?", (doc_id,)
         ).fetchone()
         if rij and rij["pad_json"]:
-            pad = Path(rij["pad_json"])
+            pad = self._resolve_pad(rij["pad_json"])
             if pad.exists():
                 pad.unlink()
         self.db.execute("DELETE FROM doc_actors WHERE doc_id = ?", (doc_id,))
